@@ -13,6 +13,7 @@ import random
 
 import networkx as nx
 from networkx.algorithms.community import girvan_newman
+import networkx.algorithms.community as community_louvain
 
 from common.util.decorator import time_record
 from common.util.drawer import draw_communities
@@ -20,24 +21,52 @@ from common.util.result_evaluation import CommunityDetectionMetrics
 
 
 @time_record
-def GN_algorithm(edge_list):
-    # 创建一个无向图
-    G = nx.Graph()
+def GN_algorithm(edge_list, max_iter=10, modularity_threshold=0.5, frequency=2):
+    """
+    优化后的 Girvan-Newman 社区划分算法。
 
-    # 将输入的 list 添加为图的边
+    :param edge_list: 输入的图的边列表
+    :param max_iter: 最大迭代次数
+    :param modularity_threshold: 模块度阈值，达到此值时提前停止
+    :param frequency: 模块度计算的频率（每隔多少次迭代计算一次）
+    :return: 返回最佳社区划分和对应的图
+    """
+    # 创建无向图
+    G = nx.Graph()
     G.add_edges_from(edge_list)
 
-    # GN 算法通过社区迭代生成器来实现
+    # GN 算法社区生成器
     communities_generator = girvan_newman(G)
 
-    # 获取迭代器中的第一个划分结果
-    try:
-        first_community = next(communities_generator)
-        communities = [list(community) for community in first_community]
-    except StopIteration:
-        communities = []  # 如果无法划分社区，返回空列表
+    # 初始设置
+    best_communities = None
+    best_modularity = -1
+    iteration = 0
 
-    return G, communities
+    for communities in communities_generator:
+        # 每隔 'frequency' 次计算一次模块度，减少频率
+        if iteration % frequency == 0:
+            community_list = [list(community) for community in communities]
+            modularity = community_louvain.modularity(G, community_list)
+
+            # 更新最佳社区划分
+            if modularity > best_modularity:
+                best_modularity = modularity
+                best_communities = community_list
+
+            # 当达到模块度阈值时提前停止
+            if best_modularity >= modularity_threshold:
+                print(f"提前停止，模块度达到阈值: {modularity_threshold}")
+                break
+
+        # 达到最大迭代次数时停止
+        if iteration >= max_iter:
+            print(f"达到最大迭代次数: {max_iter}")
+            break
+
+        iteration += 1
+
+    return G, best_communities
 
 
 if __name__ == '__main__':
