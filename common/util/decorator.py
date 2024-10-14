@@ -28,7 +28,7 @@ def time_record(original_function):
         end = time.time()
         signature = ", ".join([repr(a) for a in args] + [f"{k}={v!r}" for k, v in kwargs.items()])
         print(
-            f"{original_function.__name__}({signature}) took {end - start:.4f} seconds to run, from {start:.4f} to {end:.4f}")
+            f"took {end - start:.4f} seconds to run, from {start:.4f} to {end:.4f}")
         return result
 
     @wraps(original_function)
@@ -38,7 +38,7 @@ def time_record(original_function):
         end = time.time()
         signature = ", ".join([repr(a) for a in args] + [f"{k}={v!r}" for k, v in kwargs.items()])
         print(
-            f"{original_function.__name__}({signature}) took {end - start:.4f} seconds to run, from {start:.4f} to {end:.4f}")
+            f"took {end - start:.4f} seconds to run, from {start:.4f} to {end:.4f}")
         return result
 
     if asyncio.iscoroutinefunction(original_function):

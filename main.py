@@ -12,17 +12,22 @@ Class Description:
 import networkx as nx
 
 from algorithm.GN import GN_algorithm
+from algorithm.Louvain import Louvain_algorithm
+from algorithm.SpectralClustering import SpectralClustering_algorithm
+from common.util.data_reader.ZKClubDataset import ZKClubDataset
 from common.util.dataset_dealer import Dataset
 from common.util.data_reader.EmailEuCoreDataset import EmailEuCoreDataset
 from common.util.drawer import draw_communities
 from common.util.result_evaluation import CommunityDetectionMetrics
 
 # 读取数据集和truthtable（如有）
-a = Dataset(EmailEuCoreDataset)
+a = Dataset(ZKClubDataset)
 raw_data, truth_table = a.read()
 
 # 调用算法
-G, communities = GN_algorithm(raw_data)
+# G, communities = GN_algorithm(raw_data)
+# G, communities = Louvain_algorithm(raw_data)
+G, communities = SpectralClustering_algorithm(raw_data)
 
 # 原始图
 pos = nx.spring_layout(G)
