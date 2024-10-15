@@ -16,7 +16,7 @@ import networkx as nx
 from matplotlib import pyplot as plt
 
 
-def draw_communities(G, pos, communities=None, max_nodes=200, draw_networkx_labels=False):
+def draw_communities(G, pos, communities=None, max_nodes=200, draw_networkx_labels=True):
     total_nodes = G.number_of_nodes()
 
     # 如果节点数超过 max_nodes，则随机选择一部分节点

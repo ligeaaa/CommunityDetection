@@ -19,6 +19,8 @@ class ZKClubDataset(DatasetReader):
         self.data_path = r".\\data\\ZK Club\\karate_club_data.txt"
         # truthtable path
         self.truthtable_path = r".\\data\\ZK Club\\truthtable.txt"
+        # number of community
+        self.number_of_community = 2
 
     def read_data(self):
         """

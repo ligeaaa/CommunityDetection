@@ -19,6 +19,8 @@ class EmailEuCoreDataset(DatasetReader):
         self.data_path = ".\\data\\email-Eu-core network\\email-Eu-core.txt"
         # truthtable path
         self.truthtable_path = ".\\data\\email-Eu-core network\\email-Eu-core-department-labels.txt"
+        # number of community
+        self.number_of_community = 42
 
     def read_data(self):
         """

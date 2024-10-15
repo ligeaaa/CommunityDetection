@@ -18,4 +18,6 @@ class Dataset:
         self.dataset_reader = dataset_reader()
 
     def read(self):
-        return self.dataset_reader.read_data(), self.dataset_reader.read_truthtable()
+        return (self.dataset_reader.read_data(),
+                self.dataset_reader.read_truthtable(),
+                self.dataset_reader.number_of_community)
