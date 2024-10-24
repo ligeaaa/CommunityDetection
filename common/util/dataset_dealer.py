@@ -15,7 +15,7 @@ from common.util.data_reader.DatesetRead import DatasetReader
 
 class Dataset:
     def __init__(self, dataset_reader: DatasetReader):
-        self.dataset_reader = dataset_reader()
+        self.dataset_reader = dataset_reader
 
     def read(self):
         return (self.dataset_reader.read_data(),

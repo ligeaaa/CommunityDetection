@@ -22,7 +22,7 @@ from common.util.drawer import draw_communities
 from common.util.result_evaluation import CommunityDetectionMetrics
 
 # 读取数据集和truthtable（如有）
-a = Dataset(ZKClubDataset)
+a = Dataset(ZKClubDataset())
 # a = Dataset(EmailEuCoreDataset)
 
 
