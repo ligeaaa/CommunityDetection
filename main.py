@@ -22,16 +22,16 @@ from common.util.drawer import draw_communities
 from common.util.result_evaluation import CommunityDetectionMetrics
 
 # 读取数据集和truthtable（如有）
-# a = Dataset(ZKClubDataset)
-a = Dataset(EmailEuCoreDataset)
+a = Dataset(ZKClubDataset)
+# a = Dataset(EmailEuCoreDataset)
 
 
 raw_data, truth_table, number_of_community = a.read()
 
 # 调用算法
-# G, communities = louvain_algorithm(raw_data)
+G, communities = louvain_algorithm(raw_data)
 # G, communities = sbm_algorithm(raw_data, num_blocks=number_of_community)
-G, communities = spectral_clustering_algorithm(raw_data, num_clusters=number_of_community)
+# G, communities = spectral_clustering_algorithm(raw_data, num_clusters=number_of_community)
 
 # 原始图
 pos = nx.spring_layout(G)

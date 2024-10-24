@@ -28,16 +28,24 @@ class EmailEuCoreDataset(DatasetReader):
         :return: list[a, b], Person a and Person b have email correspondence.
         """
         content = []
+        min_person = float('inf')  # 初始化最小值为正无穷大，便于找到最小编号
         with open(self.data_path, 'r', encoding='utf-8') as file:
             while True:
                 line = file.readline()
                 if not line:
                     break
 
-                # change the content into number
+                # 将每行的内容转化为数字
                 numbers = line.split()
                 numbers = [int(num) for num in numbers]
                 content.append(numbers)
+
+                # 更新最小值，找到最小的编号
+                min_person = min(min_person, *numbers)
+
+        # 如果最小值不是0，则将所有人员编号减去最小值，使其从0开始
+        if min_person != 0:
+            content = [[num - min_person for num in pair] for pair in content]
 
         return content
 
@@ -47,16 +55,26 @@ class EmailEuCoreDataset(DatasetReader):
         :return: list[a, b], Person a belongs to Department b.
         """
         content = []
+        min_person = float('inf')  # 初始化最小值为正无穷大，便于找到最小人员编号
+        min_department = float('inf')  # 初始化最小值为正无穷大，便于找到最小部门编号
         with open(self.truthtable_path, 'r', encoding='utf-8') as file:
             while True:
                 line = file.readline()
                 if not line:
                     break
 
-                # change the content into number
+                # 将每行的内容转化为数字
                 numbers = line.split()
                 numbers = [int(num) for num in numbers]
                 content.append(numbers)
+
+                # 更新最小值，找到最小的人员和部门编号
+                min_person = min(min_person, numbers[0])
+                min_department = min(min_department, numbers[1])
+
+        # 如果人员编号或部门编号不是0，则将它们分别减去最小值，使其从0开始
+        if min_person != 0 or min_department != 0:
+            content = [[person - min_person, department - min_department] for person, department in content]
 
         return content
 
