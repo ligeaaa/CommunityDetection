@@ -1,16 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-@contributor: PanLianggang
-@contact: 1304412077@qq.com
-@file: GN.py
-@date: 2024/10/4 22:52
-Class Description:
-- Briefly describe the purpose of this class here.
-@license: MIT
-"""
-import random
-
 import networkx as nx
 from networkx.algorithms.community import girvan_newman
 import networkx.algorithms.community as community_louvain
@@ -25,11 +14,11 @@ def GN_algorithm(edge_list, max_iter=10, modularity_threshold=0.5, frequency=2):
     """
     优化后的 Girvan-Newman 社区划分算法。
 
-    :param edge_list: 输入的图的边列表
+    :param edge_list: 输入的图的边列表, 其中的[x,y]表示x节点和y节点相连接
     :param max_iter: 最大迭代次数
     :param modularity_threshold: 模块度阈值，达到此值时提前停止
     :param frequency: 模块度计算的频率（每隔多少次迭代计算一次）
-    :return: 返回最佳社区划分和对应的图
+    :return: best_communities：[1,2][3,4]表明12属于0社区，34属于1社区
     """
     # 创建无向图
     G = nx.Graph()

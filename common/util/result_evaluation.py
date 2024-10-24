@@ -70,13 +70,24 @@ class CommunityDetectionMetrics:
 
     def normalized_mutual_information(self):
         """
-        计算归一化互信息 (NMI)
+        计算归一化互信息 (NMI)。
+        衡量两个不同划分之间相似性的指标，通常用于社区发现结果与真实社区划分之间的一致性评估。NMI 值在 0 到 1 之间，1 表示完全匹配，0 表示没有相关性。
         """
         # 生成用于 NMI 计算的扁平化标签
-        result_flat = [self.truth_to_result[community_index] for community_index, community in enumerate(self.communities)
-                             for node in community]
+        result_flat = []
 
-        truth_flat = [node[1] for node in self.truth_table]  # 只提取真实标签
+        # 确保所有节点都有标签，并且不重复
+        for community_index, community in enumerate(self.communities):
+            for node in community:
+                if node - 1 < len(self.truth_table):  # 确保节点编号在有效范围内
+                    result_flat.append(community_index)
+
+        truth_flat = [node[1] for node in self.truth_table]  # 真实标签
+
+        # 确保 result_flat 和 truth_flat 的长度一致
+        if len(truth_flat) != len(result_flat):
+            raise ValueError(
+                f"Inconsistent number of samples: truth_table has {len(truth_flat)} labels, but result has {len(result_flat)} labels.")
 
         # 计算 NMI
         nmi_value = normalized_mutual_info_score(truth_flat, result_flat)
@@ -85,12 +96,15 @@ class CommunityDetectionMetrics:
 
     def accuracy(self):
         """
-        计算社区划分的准确率 (ACC)
+        计算社区划分的准确率 (ACC)。
+        衡量社区划分中节点分类正确的比例。通过比较算法输出的社区标签与真实标签的匹配情况来计算准确率。
+        反映算法生成的划分与真实标签的重合程度。
         """
 
         # 生成用于准确率计算的扁平化标签
-        result_flat = [self.truth_to_result[community_index] for community_index, community in enumerate(self.communities)
-                             for node in community]
+        result_flat = [self.truth_to_result[community_index] for community_index, community in
+                       enumerate(self.communities)
+                       for node in community]
         truth_flat = [node[1] for node in self.truth_table]  # 提取真实社区标签
 
         # 计算准确率
@@ -101,89 +115,11 @@ class CommunityDetectionMetrics:
 
     def modularity(self):
         """
-        计算模块度
+        计算模块度 (Modularity)。
+        表示社区划分的模块度得分，范围通常为 [-1, 1]，值越大表示划分越好。
+        模块度是社区划分的经典评估指标之一，广泛用于衡量无监督社区发现算法的效果。
         """
         return nx.algorithms.community.modularity(self.G, self.communities)
-
-    def purity(self):
-        """
-        计算社区划分的纯度 (Purity)
-        """
-        # 计算每个社区的真实标签分布
-        total_count = sum(len(community) for community in self.communities)  # 所有社区的节点总数
-        correct_count = 0  # 记录正确的节点数
-
-        # 为每个社区分配真实标签
-        for community in self.communities:
-            # 获取社区中所有节点的真实标签
-            community_labels = [node for node in community]  # 这里直接是节点 ID
-
-            # 计算每个标签在真实标签中的出现频率
-            label_count = {label: 0 for label in set(node[1] for node in self.truth_table)}  # 初始化标签计数
-
-            for node in community_labels:
-                # 查找真实标签
-                for truth_node in self.truth_table:
-                    if truth_node[0] == node:
-                        label_count[truth_node[1]] += 1
-
-            # 找到出现次数最多的标签
-            max_label_count = max(label_count.values(), default=0)
-            correct_count += max_label_count  # 累加正确的节点数
-
-        # 计算纯度
-        purity_value = correct_count / total_count if total_count > 0 else 0
-        return purity_value
-
-    def adjusted_rand_index(self):
-        """
-        计算 ARI (Adjusted Rand Index)
-        """
-        # 从 result 中提取节点 ID
-        result_flat = [self.truth_to_result[community_index] for community_index, community in enumerate(self.communities)
-                             for node in community]
-        # 从 truth 中提取真实标签
-        truth_flat = [label[1] for label in self.truth_table]  # 这里假设 label[1] 是真实的社区标签
-
-        return adjusted_rand_score(truth_flat, result_flat)
-
-    def f1_score(self):
-        """
-        计算 F1 Score
-        """
-
-        # 从 result 中提取节点 ID
-        result_flat = [self.truth_to_result[community_index] for community_index, community in enumerate(self.communities)
-                             for node in community]
-        # 从 truth 中提取真实标签
-        truth_flat = [label[1] for label in self.truth_table]  # 这里假设 label[1] 是真实的社区标签
-
-        # 计算精度和召回率
-        precision = self.precision(result_flat, truth_flat)
-        recall = self.recall(result_flat, truth_flat)
-
-        # 计算 F1 Score
-        if precision + recall == 0:
-            return 0.0
-        return 2 * (precision * recall) / (precision + recall)
-
-    def conductance(self):
-        """
-        计算导电率
-        """
-        total_conductance = 0
-        for community in self.communities:
-            # 获取社区节点集合
-            community_nodes = set(community)
-            internal_edges = self.G.subgraph(community_nodes).number_of_edges()
-            boundary_edges = sum(
-                1 for node in community_nodes for neighbor in self.G.neighbors(node) if neighbor not in community_nodes)
-
-            if internal_edges + boundary_edges > 0:
-                conductance_value = boundary_edges / (internal_edges + boundary_edges)
-                total_conductance += conductance_value
-
-        return total_conductance / len(self.communities) if self.communities else 0
 
     def evaluate(self):
         """
@@ -192,35 +128,10 @@ class CommunityDetectionMetrics:
         nmi = self.normalized_mutual_information()
         acc = self.accuracy()
         mod = self.modularity()
-        pur = self.purity()
-        ari = self.adjusted_rand_index()
-        f1 = self.f1_score()
-        cond = self.conductance()
 
         return {
             "NMI": nmi,
             "Accuracy": acc,
-            "Modularity": mod,
-            "Purity": pur,
-            "ARI": ari,
-            "F1 Score": f1,
-            "Conductance": cond
+            "Modularity": mod
         }
 
-    def precision(self, predictions, truths):
-        """
-        计算精度
-        """
-        if not predictions:
-            return 0.0
-        correct_predictions = sum(1 for p in predictions if p in truths)
-        return correct_predictions / len(predictions)
-
-    def recall(self, predictions, truths):
-        """
-        计算召回率
-        """
-        if not truths:
-            return 0.0
-        correct_predictions = sum(1 for p in predictions if p in truths)
-        return correct_predictions / len(truths)
