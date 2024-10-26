@@ -9,7 +9,7 @@ class DBLPDataset(DatasetReader):
         super().__init__()
         self.data_path = r"./data/DBLP/com-dblp.ungraph.txt"
         # truthtable path
-        self.truthtable_path = r"./data/DBLP/com-dblp.all.cmty.txt"
+        self.truthtable_path = r"./data/amazon/com-amazon.top5000.cmty.txt"
         # Number of communities,可以在get_base_information或其他逻辑中确定实际的社区数量
         self.number_of_community = 13477
 

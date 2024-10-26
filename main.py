@@ -1,18 +1,10 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-@contributor: PanLianggang
-@contact: 1304412077@qq.com
-@file: main.py
-@date: 2024/10/3 14:47
-Class Description:
-- Briefly describe the purpose of this class here.
-@license: MIT
-"""
 import networkx as nx
 
 from algorithm.louvain import louvain_algorithm
 from common.util.data_reader.DBLPDataset import DBLPDataset
+from common.util.data_reader.EmailEuCoreDataset import EmailEuCoreDataset
 from common.util.data_reader.ZKClubDataset import ZKClubDataset
 from common.util.data_reader.dataset_dealer import Dataset
 from common.util.drawer import draw_communities
@@ -20,7 +12,7 @@ from common.util.result_evaluation import CommunityDetectionMetrics
 
 # 读取数据集和truthtable（如有）
 # a = Dataset(ZKClubDataset())
-# a = Dataset(EmailEuCoreDataset)
+# a = Dataset(EmailEuCoreDataset())
 a = Dataset(DBLPDataset())
 
 
