@@ -34,13 +34,17 @@ def validate_input(raw_data, truth_table):
 
     # Check community ID continuity
     community_ids = sorted({community for _, community in truth_table})
-    if community_ids != list(range(len(community_ids))):
+    if community_ids == list(range(len(community_ids))):
+        logger.info("Community IDs are consecutive from 0.")
+    else:
         logger.error(f"Community IDs are not consecutive from 0. Found communities: {community_ids}")
         errors_found = True
 
     # Check node ID continuity
     node_ids_in_edges = sorted({node for edge in raw_data for node in edge})
-    if node_ids_in_edges != list(range(node_ids_in_edges[-1] + 1)):
+    if node_ids_in_edges == list(range(node_ids_in_edges[-1] + 1)):
+        logger.info("Node IDs are consecutive from 0.")
+    else:
         logger.error(f"Node IDs are not consecutive from 0. Found nodes in edges: {node_ids_in_edges}")
         errors_found = True
 
@@ -49,11 +53,15 @@ def validate_input(raw_data, truth_table):
     unassigned_nodes = set(node_ids_in_edges) - node_ids_in_truth_table
     if unassigned_nodes:
         logger.warning(f"{len(unassigned_nodes)} nodes are not assigned to any community: {sorted(unassigned_nodes)}")
+    else:
+        logger.info("All nodes in raw_data are assigned to at least one community in truth_table.")
 
     # Check for nodes in truth_table not present in raw_data
     extra_nodes = node_ids_in_truth_table - set(node_ids_in_edges)
     if extra_nodes:
         logger.warning(f"Nodes in truth_table but not in raw_data: {sorted(extra_nodes)}")
+    else:
+        logger.info("All nodes in truth_table are present in raw_data.")
 
     if not errors_found:
         logger.info("Input validation completed successfully.")
@@ -165,19 +173,21 @@ if __name__ == '__main__':
     raw_data = [
         [0, 1],
         [1, 2],
-        [1, 2],  # Duplicate edge for testing
-        [2, 1],  # Duplicate edge in reverse for testing
+        [1, 2],  # Duplicate edge: repeated edge between node 1 and node 2
+        [2, 1],  # Duplicate edge (reversed): repeated edge between node 1 and node 2 in reverse order
         [3, 4],
-        [3, 4, 5, 6],
-        [3, 4]
+        [3, 4, 1],  # Format error: expected [int, int] but contains three nodes
+        [1, 6],
+        [3, 4]  # Duplicate edge: repeated edge between node 3 and node 4
     ]
+
     truth_table = [
         [0, 1],
         [1, 1],
         [2, 0],
         [3, 0],
         [4, 2],
-        [5, 1]  # Node 5 is in truth_table but not in raw_data
+        [5, 1]  # Node in truth_table but missing in raw_data: node 5 has no associated edges in raw_data
     ]
 
     # Call the function to analyze the dataset
