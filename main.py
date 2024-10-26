@@ -12,14 +12,16 @@ Class Description:
 import networkx as nx
 
 from algorithm.louvain import louvain_algorithm
+from common.util.data_reader.DBLPDataset import DBLPDataset
 from common.util.data_reader.ZKClubDataset import ZKClubDataset
 from common.util.data_reader.dataset_dealer import Dataset
 from common.util.drawer import draw_communities
 from common.util.result_evaluation import CommunityDetectionMetrics
 
 # 读取数据集和truthtable（如有）
-a = Dataset(ZKClubDataset())
+# a = Dataset(ZKClubDataset())
 # a = Dataset(EmailEuCoreDataset)
+a = Dataset(DBLPDataset())
 
 
 raw_data, truth_table, number_of_community = a.read()

@@ -1,14 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-@contributor: PanLianggang
-@contact: 1304412077@qq.com
-@file: EmailEuCoreDataset.py
-@date: 2024/10/3 15:10
-Class Description:
-- Briefly describe the purpose of this class here.
-@license: MIT
-"""
 from common.util.data_reader.DatesetRead import DatasetReader
 
 
@@ -16,9 +7,9 @@ class EmailEuCoreDataset(DatasetReader):
     def __init__(self):
         # Raw Data Path
         super().__init__()
-        self.data_path = ".\\data\\email-Eu-core network\\email-Eu-core.txt"
+        self.data_path = r".\\data\\email-Eu-core network\\email-Eu-core.txt"
         # truthtable path
-        self.truthtable_path = ".\\data\\email-Eu-core network\\email-Eu-core-department-labels.txt"
+        self.truthtable_path = r".\\data\\email-Eu-core network\\email-Eu-core-department-labels.txt"
         # number of community
         self.number_of_community = 42
 
