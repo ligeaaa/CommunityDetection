@@ -11,13 +11,9 @@ Class Description:
 """
 import networkx as nx
 
-from algorithm.SBM import sbm_algorithm
 from algorithm.louvain import louvain_algorithm
-from algorithm.other.GN_k import GN_algorithm_k
-from algorithm.spectral_clustering import spectral_clustering_algorithm
 from common.util.data_reader.ZKClubDataset import ZKClubDataset
-from common.util.dataset_dealer import Dataset
-from common.util.data_reader.EmailEuCoreDataset import EmailEuCoreDataset
+from common.util.data_reader.dataset_dealer import Dataset
 from common.util.drawer import draw_communities
 from common.util.result_evaluation import CommunityDetectionMetrics
 

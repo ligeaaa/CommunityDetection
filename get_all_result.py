@@ -10,7 +10,7 @@ from algorithm.louvain import louvain_algorithm
 from algorithm.spectral_clustering import spectral_clustering_algorithm
 from common.util.data_reader.ZKClubDataset import ZKClubDataset
 from common.util.data_reader.EmailEuCoreDataset import EmailEuCoreDataset
-from common.util.dataset_dealer import Dataset
+from common.util.data_reader.dataset_dealer import Dataset
 from common.util.result_evaluation import CommunityDetectionMetrics
 from common.util.drawer import draw_communities
 import pandas as pd  # 用于生成汇总报告
