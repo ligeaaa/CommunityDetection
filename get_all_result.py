@@ -20,12 +20,13 @@ import pandas as pd  # 用于生成汇总报告
 from openpyxl.styles import PatternFill, Font
 
 
-def evaluate_algorithm_on_dataset(dataset_class, algorithm_func):
+def evaluate_algorithm_on_dataset(dataset_class, algorithm_func, num_runs=100):
     """
-    根据 dataset_class 和 algorithm_func 选择对应的数据集和算法，输出算法在数据集上的评估结果和运行时间
+    根据 dataset_class 和 algorithm_func 选择对应的数据集和算法，运行多次并取平均值，输出平均评估结果和平均运行时间。
     :param dataset_class: 数据集类 (e.g., ZKClubDataset, EmailEuCoreDataset)
     :param algorithm_func: 算法函数 (e.g., louvain_algorithm, sbm_algorithm, spectral_clustering_algorithm)
-    :return: dict，包含数据集名称、算法名称、运行时间、评估指标
+    :param num_runs: 运行次数，默认为 10
+    :return: dict，包含数据集名称、算法名称、平均运行时间和评估指标
     """
     # 实例化数据集类
     dataset = Dataset(dataset_class())
@@ -33,40 +34,53 @@ def evaluate_algorithm_on_dataset(dataset_class, algorithm_func):
     # 读取数据集和truthtable
     raw_data, truth_table, number_of_community = dataset.read()
 
-    # 记录开始时间
-    start_time = time.time()
+    # 存储多次运行的结果
+    runtime_total = 0
+    metrics_total = {}
 
-    # 调用算法
-    if algorithm_func == sbm_algorithm:
-        # sbm 需要额外传递社区数量
-        G, communities = algorithm_func(raw_data, num_blocks=number_of_community)
-    else:
-        # 其他算法直接调用
-        G, communities = algorithm_func(raw_data)
+    # 多次运行并累计结果
+    for _ in range(num_runs):
+        # 记录开始时间
+        start_time = time.time()
 
-    # 记录结束时间
-    end_time = time.time()
+        # 调用算法并传递社区数量参数
+        if algorithm_func == sbm_algorithm:
+            G, communities = algorithm_func(raw_data, num_blocks=number_of_community)
+        elif algorithm_func == spectral_clustering_algorithm:
+            G, communities = algorithm_func(raw_data, num_clusters=number_of_community)
+        else:
+            G, communities = algorithm_func(raw_data)
 
-    # 计算运行时间
-    runtime = end_time - start_time
+        # 记录结束时间
+        end_time = time.time()
+        runtime = end_time - start_time
+        runtime_total += runtime
 
-    # 可视化社区划分
-    pos = nx.spring_layout(G)
-    draw_communities(G, pos, communities)
+        # 评估社区划分的表现
+        evaluation = CommunityDetectionMetrics(G, communities, truth_table)
+        metrics = evaluation.evaluate()
 
-    # 评估社区划分的表现
-    evaluation = CommunityDetectionMetrics(G, communities, truth_table)
-    metrics = evaluation.evaluate()
+        # 累计每次运行的评估结果
+        for metric, value in metrics.items():
+            if metric in metrics_total:
+                metrics_total[metric] += value
+            else:
+                metrics_total[metric] = value
 
-    # 收集所有结果并返回
+    # 计算平均运行时间和平均评估结果
+    avg_runtime = runtime_total / num_runs
+    avg_metrics = {metric: value / num_runs for metric, value in metrics_total.items()}
+
+    # 收集平均结果并返回
     result = {
         'dataset': dataset_class.__name__,  # 获取类名作为数据集名称
         'algorithm': algorithm_func.__name__,  # 获取函数名作为算法名称
-        'runtime': runtime,
+        'runtime': avg_runtime,
     }
-    result.update(metrics)  # 将评估的结果添加到 result 字典中
+    result.update(avg_metrics)  # 将平均评估的结果添加到 result 字典中
 
     return result
+
 
 
 def generate_report(results):
@@ -161,8 +175,8 @@ if __name__ == "__main__":
         for algorithm_func in algorithm_functions:
             print(f"\n==== 运行 {algorithm_func.__name__} 算法在 {dataset_class.__name__} 数据集上 ====\n")
             try:
-                result = evaluate_algorithm_on_dataset(dataset_class, algorithm_func)
-                results.append(result)  # 收集每次的结果
+                result = evaluate_algorithm_on_dataset(dataset_class, algorithm_func, num_runs=10)
+                results.append(result)  # 收集每次的平均结果
             except Exception as e:
                 print(f"运行 {algorithm_func.__name__} 在 {dataset_class.__name__} 时出错: {e}")
 

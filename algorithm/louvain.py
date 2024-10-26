@@ -6,7 +6,7 @@ from common.util.decorator import time_record
 from common.util.drawer import draw_communities
 from common.util.result_evaluation import CommunityDetectionMetrics
 
-@time_record
+# @time_record
 def louvain_algorithm(edge_list):
     """
     Louvain社区划分算法。

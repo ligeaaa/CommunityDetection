@@ -10,7 +10,7 @@ import numpy as np
 from itertools import combinations  # 从 itertools 模块中导入 combinations
 
 
-@time_record
+# @time_record
 def sbm_algorithm(edge_list, num_blocks=2):
     """
     自动生成 SBM 参数并应用 SBM 社区划分算法，输入与 GN_algorithm 格式一致。
