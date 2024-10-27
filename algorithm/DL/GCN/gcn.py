@@ -56,8 +56,8 @@ def train(model, data, optimizer, loss_fn, epochs=100, device='cpu'):
         loss.backward()
         optimizer.step()
 
-        if (epoch + 1) % 10 == 0:
-            print(f'Epoch {epoch + 1}/{epochs}, Loss: {loss.item():.4f}')
+        # if (epoch + 1) % 10 == 0:
+        #     print(f'Epoch {epoch + 1}/{epochs}, Loss: {loss.item():.4f}')
 
 
 # 3. 测试函数
@@ -90,7 +90,6 @@ def save_model(model):
 
 
 # 5. 主训练和评估函数
-@time_record
 def GCN_train_and_evaluate(raw_data, truth_table, device, epochs=100, learning_rate=0.01):
     # 加载数据
     data = load_data(raw_data, truth_table, device)
@@ -100,8 +99,18 @@ def GCN_train_and_evaluate(raw_data, truth_table, device, epochs=100, learning_r
     output_dim = len(set([community for _, community in truth_table]))  # 社区数量
     num_nodes = data.num_nodes  # 节点数
 
-    # 根据数据规模动态设定 hidden_dim
-    hidden_dim = max(16, int(math.sqrt(num_nodes) * input_dim * 0.5))  # 使用节点数和输入维度计算
+    # 计算可用内存并限制 hidden_dim
+    total_memory = torch.cuda.get_device_properties(device).total_memory
+    reserved_memory = torch.cuda.memory_reserved(device)
+    available_memory = total_memory - reserved_memory
+
+    # 根据可用内存动态设定 hidden_dim
+    # 假设每个 hidden_dim 约消耗 10 MB，可以根据具体情况调整
+    max_hidden_dim = int(available_memory // (10 * 1024 * 1024))
+    hidden_dim = min(max(16, int(math.sqrt(num_nodes) * input_dim * 0.5)), max_hidden_dim, 65536)
+
+    # 打印 hidden_dim 确认
+    # print(f"Input dimension: {input_dim}, Hidden dimension: {hidden_dim}")
 
     # 初始化模型
     model = GCN(input_dim, hidden_dim, output_dim).to(device)
