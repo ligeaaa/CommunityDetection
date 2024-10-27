@@ -4,6 +4,10 @@ import os
 import time
 from datetime import datetime
 
+import networkx as nx
+import torch
+
+from algorithm.DL.GCN.gcn import GCN_train_and_evaluate
 from algorithm.classic.SBM import sbm_algorithm
 from algorithm.classic.louvain import louvain_algorithm
 from algorithm.classic.spectral_clustering import spectral_clustering_algorithm
@@ -17,7 +21,7 @@ import pandas as pd  # 用于生成汇总报告
 from openpyxl.styles import PatternFill, Font
 
 
-def evaluate_algorithm_on_dataset(dataset_class, algorithm_func, num_runs=100):
+def evaluate_algorithm_on_dataset(dataset_class, algorithm_func, num_runs=10):
     """
     根据 dataset_class 和 algorithm_func 选择对应的数据集和算法，运行多次并取平均值，输出平均评估结果和平均运行时间。
     :param dataset_class: 数据集类 (e.g., ZKClubDataset, EmailEuCoreDataset)
@@ -25,11 +29,15 @@ def evaluate_algorithm_on_dataset(dataset_class, algorithm_func, num_runs=100):
     :param num_runs: 运行次数，默认为 10
     :return: dict，包含数据集名称、算法名称、平均运行时间和评估指标
     """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     # 实例化数据集类
     dataset = Dataset(dataset_class())
 
     # 读取数据集和truthtable
     raw_data, truth_table, number_of_community, dataset_name = dataset.read()
+    G = nx.Graph()
+    G.add_edges_from(raw_data)
 
     # 存储多次运行的结果
     runtime_total = 0
@@ -42,11 +50,13 @@ def evaluate_algorithm_on_dataset(dataset_class, algorithm_func, num_runs=100):
 
         # 调用算法并传递社区数量参数
         if algorithm_func == sbm_algorithm:
-            G, communities = algorithm_func(raw_data, num_blocks=number_of_community)
+            communities = algorithm_func(raw_data, num_blocks=number_of_community)
         elif algorithm_func == spectral_clustering_algorithm:
-            G, communities = algorithm_func(raw_data, num_clusters=number_of_community)
+            communities = algorithm_func(raw_data, num_clusters=number_of_community)
+        elif algorithm_func == GCN_train_and_evaluate:
+            communities = GCN_train_and_evaluate(raw_data, truth_table, device)
         else:
-            G, communities = algorithm_func(raw_data)
+            communities = algorithm_func(raw_data)
 
         # 记录结束时间
         end_time = time.time()
@@ -79,7 +89,6 @@ def evaluate_algorithm_on_dataset(dataset_class, algorithm_func, num_runs=100):
     return result
 
 
-
 def generate_report(results):
     """
     生成汇总报告并输出为 Excel 文件，并给不同数据集的行设置浅色背景，并加粗显示最高的 NMI、Accuracy、Modularity 和最小的 runtime
@@ -96,7 +105,7 @@ def generate_report(results):
 
     # 保存路径
     file_name = "community_detection_report_" + formatted_time + ".xlsx"
-    file_path = os.path.join("result", file_name)
+    file_path = os.path.join(r"result\report", file_name)
 
     # 将结果保存为 Excel 文件
     with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
@@ -111,7 +120,7 @@ def generate_report(results):
             "CCFFCC",  # 浅绿色
             "FFCCCC",  # 浅红色
             "FFFFCC",  # 浅黄色
-            "FFCCFF"   # 浅紫色
+            "FFCCFF"  # 浅紫色
         ]
         fill_patterns = [PatternFill(start_color=color, end_color=color, fill_type="solid") for color in fill_colors]
 
@@ -153,7 +162,9 @@ def generate_report(results):
                 # 加粗和加亮所有最小/最大值所在的行
                 for row in min_rows:
                     worksheet.cell(row=row, column=col_index).font = Font(bold=True)
-                    worksheet.cell(row=row, column=col_index).fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")  # 黄色高亮
+                    worksheet.cell(row=row, column=col_index).fill = PatternFill(start_color="FFFF00",
+                                                                                 end_color="FFFF00",
+                                                                                 fill_type="solid")  # 黄色高亮
 
     print(f"\n汇总报告已保存为 {file_path}")
 
@@ -162,7 +173,8 @@ def generate_report(results):
 if __name__ == "__main__":
     # 列出所有的数据集和算法组合，直接使用类和函数而不是字符串
     dataset_classes = [ZKClubDataset, PolbooksDataset, AmericanCollegeFootball, EmailEuCoreDataset]  # 可以继续添加新数据集
-    algorithm_functions = [louvain_algorithm, sbm_algorithm, spectral_clustering_algorithm]  # 可以继续添加新算法
+    algorithm_functions = [louvain_algorithm, sbm_algorithm, spectral_clustering_algorithm,
+                           GCN_train_and_evaluate]  # 可以继续添加新算法
 
     # 存储所有运行的结果
     results = []

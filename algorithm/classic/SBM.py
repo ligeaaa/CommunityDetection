@@ -33,7 +33,7 @@ def sbm_algorithm(edge_list, num_blocks=2):
     partition = G_sbm.graph['partition']
     best_communities = [sorted(list(community)) for community in partition]
 
-    return G_sbm, best_communities
+    return best_communities
 
 
 def estimate_sbm_parameters(G):

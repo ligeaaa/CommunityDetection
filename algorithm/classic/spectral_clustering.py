@@ -48,7 +48,7 @@ def spectral_clustering_algorithm(edge_list, num_clusters=2):
 
     best_communities = [sorted(nodes) for nodes in communities.values()]
 
-    return G, best_communities
+    return best_communities
 
 
 if __name__ == '__main__':

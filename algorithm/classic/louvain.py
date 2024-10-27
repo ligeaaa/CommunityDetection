@@ -30,7 +30,7 @@ def louvain_algorithm(edge_list):
 
     best_communities = [sorted(nodes) for nodes in communities.values()]  # 按节点ID排序
 
-    return G, best_communities
+    return best_communities
 
 if __name__ == '__main__':
     # 示例输入：边的列表
