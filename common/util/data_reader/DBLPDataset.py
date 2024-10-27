@@ -12,6 +12,8 @@ class DBLPDataset(DatasetReader):
         self.truthtable_path = r"./data/amazon/com-amazon.top5000.cmty.txt"
         # Number of communities,可以在get_base_information或其他逻辑中确定实际的社区数量
         self.number_of_community = 13477
+        # name of dataset
+        self.dataset_name = "DBLPDataset"
 
     def read_data(self):
         """

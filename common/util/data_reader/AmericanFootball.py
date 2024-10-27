@@ -11,6 +11,8 @@ class AmericanCollegeFootball(DatasetReader):
         # Truth Table Path
         self.truthtable_path = r"./data/American-College-football/truth_table.txt"
         self.number_of_community = 12
+        # name of dataset
+        self.dataset_name = "AmericanCollegeFootball"
 
     def read_data(self):
         """

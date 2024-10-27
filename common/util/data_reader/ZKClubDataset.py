@@ -21,6 +21,8 @@ class ZKClubDataset(DatasetReader):
         self.truthtable_path = r".\\data\\ZK Club\\truthtable.txt"
         # number of community
         self.number_of_community = 2
+        # name of dataset
+        self.dataset_name = "ZKClubDataset"
 
     def read_data(self):
         """

@@ -12,6 +12,8 @@ class PolbooksDataset(DatasetReader):
 
         # Define the number of communities
         self.number_of_community = 3  # three communities: neutral, conservative, and liberal
+        # name of dataset
+        self.dataset_name = "PolbooksDataset"
 
     def read_data(self):
         """

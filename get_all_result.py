@@ -4,18 +4,15 @@ import os
 import time
 from datetime import datetime
 
-import networkx as nx
-from algorithm.SBM import sbm_algorithm
-from algorithm.louvain import louvain_algorithm
-from algorithm.spectral_clustering import spectral_clustering_algorithm
+from algorithm.classic.SBM import sbm_algorithm
+from algorithm.classic.louvain import louvain_algorithm
+from algorithm.classic.spectral_clustering import spectral_clustering_algorithm
 from common.util.data_reader.AmericanFootball import AmericanCollegeFootball
-from common.util.data_reader.DBLPDataset import DBLPDataset
 from common.util.data_reader.PoliticalBooksDataset import PolbooksDataset
 from common.util.data_reader.ZKClubDataset import ZKClubDataset
 from common.util.data_reader.EmailEuCoreDataset import EmailEuCoreDataset
 from common.util.data_reader.dataset_dealer import Dataset
 from common.util.result_evaluation import CommunityDetectionMetrics
-from common.util.drawer import draw_communities
 import pandas as pd  # 用于生成汇总报告
 from openpyxl.styles import PatternFill, Font
 
@@ -32,7 +29,7 @@ def evaluate_algorithm_on_dataset(dataset_class, algorithm_func, num_runs=100):
     dataset = Dataset(dataset_class())
 
     # 读取数据集和truthtable
-    raw_data, truth_table, number_of_community = dataset.read()
+    raw_data, truth_table, number_of_community, dataset_name = dataset.read()
 
     # 存储多次运行的结果
     runtime_total = 0

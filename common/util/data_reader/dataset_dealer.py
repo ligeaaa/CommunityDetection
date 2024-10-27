@@ -28,8 +28,11 @@ class Dataset:
                 Each element is [x, y], indicating node x belongs to community y.
             number_of_community: int
                 The total number of communities.
+            dataset_name: string
+                The name of the dataset.
         """
         raw_data = self.dataset_reader.read_data()
         truth_table = self.dataset_reader.read_truthtable()
         number_of_community = self.dataset_reader.number_of_community
-        return raw_data, truth_table, number_of_community
+        dataset_name = self.dataset_reader.dataset_name
+        return raw_data, truth_table, number_of_community, dataset_name
