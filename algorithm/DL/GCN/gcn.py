@@ -41,13 +41,14 @@ def load_data(raw_data, truth_table, device):
     x = torch.cat([degrees, random_features, identity_features], dim=1)
 
     # 创建图数据对象
-    data = Data(x=x, edge_index=edge_index, y=y)
+    data = Data(x=x, edge_index=edge_index, y=y).to(device)  # 确保 Data 对象在 device 上
     return data
 
 
 # 2. 训练函数
-def train(model, data, optimizer, loss_fn, epochs=100):
+def train(model, data, optimizer, loss_fn, epochs=100, device='cpu'):
     model.train()
+    data = data.to(device)  # 确保数据在正确的 device 上
     for epoch in range(epochs):
         optimizer.zero_grad()
         output = model(data)
@@ -55,13 +56,14 @@ def train(model, data, optimizer, loss_fn, epochs=100):
         loss.backward()
         optimizer.step()
 
-        # if (epoch + 1) % 10 == 0:
-        #     print(f'Epoch {epoch + 1}/{epochs}, Loss: {loss.item():.4f}')
+        if (epoch + 1) % 10 == 0:
+            print(f'Epoch {epoch + 1}/{epochs}, Loss: {loss.item():.4f}')
 
 
 # 3. 测试函数
-def test(model, data):
+def test(model, data, device='cpu'):
     model.eval()
+    data = data.to(device)  # 确保数据在正确的 device 上
     with torch.no_grad():
         output = model(data)
         predictions = output.argmax(dim=1)
@@ -88,6 +90,7 @@ def save_model(model):
 
 
 # 5. 主训练和评估函数
+@time_record
 def GCN_train_and_evaluate(raw_data, truth_table, device, epochs=100, learning_rate=0.01):
     # 加载数据
     data = load_data(raw_data, truth_table, device)
@@ -108,10 +111,10 @@ def GCN_train_and_evaluate(raw_data, truth_table, device, epochs=100, learning_r
     loss_fn = torch.nn.CrossEntropyLoss()
 
     # 训练模型
-    train(model, data, optimizer, loss_fn, epochs=epochs)
+    train(model, data, optimizer, loss_fn, epochs=epochs, device=device)
 
     # 获取最终社区划分结果
-    ans = test(model, data)
+    ans = test(model, data, device=device)
 
     # 保存模型
     # save_model(model)
@@ -125,8 +128,8 @@ if __name__ == "__main__":
     raw_data = [[0, 1], [1, 2], [2, 3], [3, 0], [0, 2], [1, 3]]  # 边列表
     truth_table = [[0, 0], [1, 0], [2, 1], [3, 1]]  # 真实社区划分
 
-    # 指定在 GPU1 上运行
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    # 指定在 GPU 上运行
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # 运行训练和评估
     communities = GCN_train_and_evaluate(raw_data, truth_table, device)
