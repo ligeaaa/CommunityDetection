@@ -11,7 +11,9 @@ from algorithm.DL.GCN.gcn import GCN_train_and_evaluate
 from algorithm.classic.SBM import sbm_algorithm
 from algorithm.classic.louvain import louvain_algorithm
 from algorithm.classic.spectral_clustering import spectral_clustering_algorithm
+from common.util.data_reader.AmazonDataset import AmazonDataset
 from common.util.data_reader.AmericanFootball import AmericanCollegeFootball
+from common.util.data_reader.CoraDataset import CoraDataset
 from common.util.data_reader.PoliticalBooksDataset import PolbooksDataset
 from common.util.data_reader.ZKClubDataset import ZKClubDataset
 from common.util.data_reader.EmailEuCoreDataset import EmailEuCoreDataset
@@ -172,9 +174,8 @@ def generate_report(results):
 # 示例调用
 if __name__ == "__main__":
     # 列出所有的数据集和算法组合，直接使用类和函数而不是字符串
-    dataset_classes = [ZKClubDataset, PolbooksDataset, AmericanCollegeFootball, EmailEuCoreDataset]  # 可以继续添加新数据集
-    algorithm_functions = [louvain_algorithm, sbm_algorithm, spectral_clustering_algorithm,
-                           GCN_train_and_evaluate]  # 可以继续添加新算法
+    dataset_classes = [ZKClubDataset, PolbooksDataset, AmericanCollegeFootball, EmailEuCoreDataset, CoraDataset, AmazonDataset]  # 可以继续添加新数据集
+    algorithm_functions = [louvain_algorithm, sbm_algorithm, spectral_clustering_algorithm]  # 可以继续添加新算法
 
     # 存储所有运行的结果
     results = []
@@ -184,7 +185,7 @@ if __name__ == "__main__":
         for algorithm_func in algorithm_functions:
             print(f"\n==== 运行 {algorithm_func.__name__} 算法在 {dataset_class.__name__} 数据集上 ====\n")
             try:
-                result = evaluate_algorithm_on_dataset(dataset_class, algorithm_func, num_runs=10)
+                result = evaluate_algorithm_on_dataset(dataset_class, algorithm_func, num_runs=1)
                 results.append(result)  # 收集每次的平均结果
             except Exception as e:
                 print(f"运行 {algorithm_func.__name__} 在 {dataset_class.__name__} 时出错: {e}")

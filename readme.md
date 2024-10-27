@@ -2,8 +2,9 @@
 这里是一个社区发现相关的代码整理仓库，用于记录我的毕设项目
 
 ## 环境
-python 3.11.9
-Microsoft Windows 10 家庭版
+- python 3.11.9
+- Microsoft Windows 10 家庭版
+- cu121
 
 ## 数据集介绍
 

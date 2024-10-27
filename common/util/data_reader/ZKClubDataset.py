@@ -1,14 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-@contributor: PanLianggang
-@contact: 1304412077@qq.com
-@file: ZKClubDataset.py
-@date: 2024/10/14 14:50
-Class Description:
-- Briefly describe the purpose of this class here.
-@license: MIT
-"""
 from common.util.data_reader.DatesetRead import DatasetReader
 
 
