@@ -23,11 +23,11 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
 
 # 读取数据集和truthtable（如有）
-# a = Dataset(ZKClubDataset())
+a = Dataset(ZKClubDataset())
 # a = Dataset(PolbooksDataset())
 # a = Dataset(AmericanCollegeFootball())
 # a = Dataset(EmailEuCoreDataset())
-a = Dataset(CoraDataset())
+# a = Dataset(CoraDataset())
 # a = Dataset(AmazonDataset())
 
 raw_data, truth_table, number_of_community, dataset_name = a.read()
@@ -39,20 +39,28 @@ G.add_edges_from(raw_data)
 # communities = louvain_algorithm(raw_data)
 # communities = sbm_algorithm(raw_data, num_blocks=number_of_community)
 # communities = spectral_clustering_algorithm(raw_data, num_clusters=number_of_community)
-# communities = GCN_train_and_evaluate(raw_data, truth_table, device)
-communities = GCN_train_unsupervised(raw_data, device, epochs=1000, learning_rate=0.01, margin=1.0)
+accuracy, nmi, mod, runtime = GCN_train_and_evaluate(raw_data, truth_table, device)
+# communities = GCN_train_unsupervised(raw_data, device, epochs=1000, learning_rate=0.01, margin=1.0)
 
-# 原始图
-pos = nx.spring_layout(G)
-draw_communities(G, pos)
+print("\n==== Final Results (Excluding First Run) ====")
+print(f"Average Accuracy: {accuracy:.16f}")
+print(f"Average NMI: {nmi:.16f}")
+print(f"Average Modularity (last run): {mod:.16f}")
+print(f"Average Runtime: {runtime:.4f} seconds")
 
-# 返回结果，包括运行时间，正确率，可视化网络等
-draw_communities(G, pos, communities)
+pass
 
-evaluation = CommunityDetectionMetrics(G, communities, truth_table)
-
-metrics = evaluation.evaluate()
-
-# 打印评估结果
-for metric, value in metrics.items():
-    print(f"{metric}: {value}")
+# # 原始图
+# pos = nx.spring_layout(G)
+# draw_communities(G, pos)
+#
+# # 返回结果，包括运行时间，正确率，可视化网络等
+# draw_communities(G, pos, communities)
+#
+# evaluation = CommunityDetectionMetrics(G, communities, truth_table)
+#
+# metrics = evaluation.evaluate()
+#
+# # 打印评估结果
+# for metric, value in metrics.items():
+#     print(f"{metric}: {value}")
