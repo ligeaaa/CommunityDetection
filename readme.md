@@ -8,19 +8,61 @@
 
 ## 数据集介绍
 
-所有数据集在读取的时候会做额外处理
-1. 所有节点编号都从0开始
-2. 所有社区编号都从0开始
+| 名字                                                                | 是否重叠  | 节点数量    | 边数量     | 社区数量  | url                                                                                                                                                                             |
+| ----------------------------------------------------------------- | ----- | ------- | ------- |-------| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zachary's Karate Club                                             | 非重叠社区 | 34      | 78      | 2     | https://en.wikipedia.org/wiki/Zachary%27s_karate_club                                                                                                                           |
+| Political Books                                                   | 非重叠社区 | 105     | 441     | 3     | https://networks.skewed.de/net/polbooks<br>https://github.com/melaniewalsh/sample-social-network-datasets/blob/master/sample-datasets/political-books/political-books-nodes.csv |
+| American College football                                         | 非重叠社区 | 115     | 613     | 12    | https://public.websites.umich.edu/~mejn/netdata/football.zip                                                                                                                    |
+| email-Eu-core network                                             | 非重叠社区 | 1005    | 25571   | 42    | https://snap.stanford.edu/data/email-Eu-core.html                                                                                                                               |
+| cora                                                              | 非重叠社区 | 2708    | 5429    | 8     | https://linqs-data.soe.ucsc.edu/public/lbc/cora.tgz                                                                                                                             |
+| Amazon product co-purchasing network and ground-truth communities | 重叠社区  | 334863  | 925872  | >5000 | https://snap.stanford.edu/data/com-Amazon.html                                                                                                                                  |
 
-| 名字                                                                | 是否重叠  | 节点数量    | 边数量     | 社区数量  | 笔记链接                      | url                                                                                                                                                                             |
-| ----------------------------------------------------------------- | ----- | ------- | ------- | ----- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| email-Eu-core network                                             | 非重叠社区 | 1005    | 25571   | 42    | [[斯坦福_邮件数据]]              | https://snap.stanford.edu/data/email-Eu-core.html                                                                                                                               |
-| Social circles: Facebook                                          |       | 4039    | 88234   |       | [[斯坦福_脸书数据]]              | https://snap.stanford.edu/data/ego-Facebook.html                                                                                                                                |
-| Zachary's Karate Club                                             | 非重叠社区 | 34      | 78      | 2     | [[Zachary's Karate Club]] | https://en.wikipedia.org/wiki/Zachary%27s_karate_club                                                                                                                           |
-| cora                                                              | 非重叠社区 | 2708    | 5429    | 8     | [[cora]]                  | https://linqs-data.soe.ucsc.edu/public/lbc/cora.tgz                                                                                                                             |
-| DBLP collaboration network and ground-truth communities           | 重叠社区  | 3170080 | 1049866 | 13477 | [[DBLP]]                  | https://snap.stanford.edu/data/com-DBLP.html                                                                                                                                    |
-| Political Books                                                   | 非重叠社区 | 105     | 441     | 3     | [[political-books]]       | https://networks.skewed.de/net/polbooks<br>https://github.com/melaniewalsh/sample-social-network-datasets/blob/master/sample-datasets/political-books/political-books-nodes.csv |
-| Amazon product co-purchasing network and ground-truth communities | 重叠社区  | 334863  | 925872  |       |                           | https://snap.stanford.edu/data/com-Amazon.html                                                                                                                                  |
+
+所有数据集在读取的时候会做额外处理
+- 所有节点编号都从0开始
+- 所有社区编号都从0开始
+
+在读取Amazon product co-purchasing network and ground-truth communities数据集的时候，本仓库进行了如下额外处理：
+- 在该数据集中，仅选择了官方已整理好的排名前5,000的社区（即com-amazon.top5000.cmty.txt文件中包含的数据）。
+- 由于原始数据包含重叠的社区，每个属于多个社区的节点仅分配到成员数量最多的社区。
+- 对于一些没有明确社区归属的节点，我们选择将其删除。
+- 进行以上处理后，该数据集基础信息：16716点 48739边 1399社区的非重叠社区数据集
 
 ## 算法介绍
-？
+
+### Louvain 社区划分算法
+Louvain 算法是一种基于模块度（modularity）的社区检测方法。它通过逐步合并模块度得分较高的社区来找到最佳社区划分，使得每个社区内的连接密度高，而社区间的连接较少。该算法的流程如下：
+
+初始阶段将每个节点视为一个独立社区。
+计算每个节点与其邻居的模块度增益，将增益最高的节点合并到一个社区。
+重复合并步骤，直到模块度不再显著增加。
+输出每个节点所属的社区。
+
+### 随机块模型（SBM）社区划分算法
+随机块模型（SBM）算法是一种生成图的统计模型，通过设定社区大小和社区间连接概率矩阵，生成特定的社区结构图。该算法的流程如下：
+- 初步使用 Louvain 或其他社区检测算法对图进行分区。
+- 根据分区结果生成 SBM 参数，包括社区大小和社区间连接概率。
+- 基于这些参数生成 SBM 模型，构建具有类似结构的图。
+- 最后，使用 SBM 模型生成的社区划分作为最佳分区结果。
+
+### 谱聚类算法
+谱聚类是一种基于图谱（Graph Spectrum）的社区检测方法，适用于检测图中成簇的节点。该算法将图的邻接矩阵进行特征分解，并使用特征向量矩阵进行 K-means 聚类。其主要流程包括：
+- 生成图的邻接矩阵，并将其转为特征矩阵。
+- 进行特征分解，将特征值矩阵作为输入传递给 K-means 聚类。
+- 输出最佳社区划分，确保每个节点都被分配到最合适的社区中。
+
+### 基于图自编码器的社区检测算法
+此算法基于图卷积神经网络（GCN）构建图自编码器，通过对比损失函数学习节点嵌入，最终通过 KMeans 聚类节点嵌入得到社区划分。其主要步骤如下：
+- 使用图自编码器进行无监督训练，以获取节点的低维嵌入表示。
+- 使用对比损失函数优化模型，以最大化同一社区节点的嵌入相似度，最小化不同社区节点的嵌入相似度。
+- 将嵌入传递给 KMeans 聚类，生成最终的社区划分结果。
+- 实现社区划分的无监督学习，不需要标签信息。
+
+### 基于图卷积神经网络的节点分类算法
+该算法使用图卷积神经网络（GCN）在 Cora 引文网络数据集上进行节点分类。主要步骤如下：
+- 构建图卷积模型：使用两层图卷积网络（GCN）模型，第一层为隐藏层（64个神经元），第二层为输出层。该网络能够在图结构上学习节点的特征表示。
+- 加载数据并构建图：加载 Cora 数据集中的节点特征、标签和图结构，并将其转换为 PyTorch Geometric 格式的 Data 对象。
+- 训练和测试划分：将数据集划分为 80% 的训练集和 20% 的测试集，用于模型训练和性能评估。
+- 模型训练：使用负对数似然损失（NLL Loss）作为目标函数，采用 Adam 优化器进行训练，通过每个 epoch 优化模型权重。
+- 性能评估：在测试集上计算分类准确率（Accuracy），并通过标准化互信息（NMI）和模块度（Modularity）等指标进一步评估模型对社区结构的识别效果。
+- 此算法通过图卷积神经网络对 Cora 数据集进行节点分类，实现了在图数据上的半监督学习。评估指标为分类准确率和社区检测质量，展示了模型对图结构数据的分类和社区划分能力。

@@ -36,8 +36,8 @@ G = nx.Graph()
 G.add_edges_from(raw_data)
 
 # 调用算法
-# communities = louvain_algorithm(raw_data)
-communities = sbm_algorithm(raw_data, num_blocks=number_of_community)
+communities = louvain_algorithm(raw_data)
+# communities = sbm_algorithm(raw_data, num_blocks=number_of_community)
 # communities = spectral_clustering_algorithm(raw_data, num_clusters=number_of_community)
 # accuracy, nmi, mod, runtime = GCN_train_and_evaluate(raw_data, truth_table, device)
 # communities = GCN_train_unsupervised(raw_data, device, epochs=1000, learning_rate=0.01, margin=1.0)
