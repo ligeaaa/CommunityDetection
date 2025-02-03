@@ -5,9 +5,10 @@ import torch
 
 from algorithm.DL.GAE.gae import GCN_train_unsupervised
 from algorithm.DL.GCN.gcn import GCN_train_and_evaluate
-from algorithm.classic.SBM import sbm_algorithm
-from algorithm.classic.louvain import louvain_algorithm
-from algorithm.classic.spectral_clustering import spectral_clustering_algorithm
+from algorithm.algorithm_dealer import AlgorithmDealer
+from algorithm.classic.SBM import SBM
+from algorithm.classic.louvain import Louvain
+from algorithm.classic.spectral_clustering import SpectralCluster
 from common.util.data_reader.AmazonDataset import AmazonDataset
 from common.util.data_reader.AmericanFootball import AmericanCollegeFootball
 from common.util.data_reader.CoraDataset import CoraDataset
@@ -30,17 +31,24 @@ a = Dataset(ZKClubDataset())
 # a = Dataset(CoraDataset())
 # a = Dataset(AmazonDataset())
 
-raw_data, truth_table, number_of_community, dataset_name = a.read()
+raw_data, truth_table, num_clusters, dataset_name = a.read()
 
 G = nx.Graph()
 G.add_edges_from(raw_data)
 
 # 调用算法
-communities = louvain_algorithm(raw_data)
-# communities = sbm_algorithm(raw_data, num_blocks=number_of_community)
-# communities = spectral_clustering_algorithm(raw_data, num_clusters=number_of_community)
+algorithmDealer = AlgorithmDealer()
+louvain_algorithm = Louvain()
+sbm_algorithm = SBM()
+spectral_clustering_algorithm = SpectralCluster()
 # accuracy, nmi, mod, runtime = GCN_train_and_evaluate(raw_data, truth_table, device)
 # communities = GCN_train_unsupervised(raw_data, device, epochs=1000, learning_rate=0.01, margin=1.0)
+
+# results = algorithmDealer.process([louvain_algorithm], G)
+# results = algorithmDealer.process([sbm_algorithm], G, num_clusters=num_clusters)
+results = algorithmDealer.process([spectral_clustering_algorithm], G, num_clusters=num_clusters)
+communities = results[0].communities
+
 
 # print("\n==== Final Results (Excluding First Run) ====")
 # print(f"Average Accuracy: {accuracy:.16f}")

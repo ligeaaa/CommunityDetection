@@ -16,6 +16,8 @@ import networkx as nx
 from matplotlib import pyplot as plt
 
 
+# def get_pos()
+
 def draw_communities(G, pos, communities=None, max_nodes=200, draw_networkx_labels=True):
     total_nodes = G.number_of_nodes()
 
