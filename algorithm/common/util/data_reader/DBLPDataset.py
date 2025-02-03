@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-from common.util.data_reader.DatesetRead import DatasetReader
+from algorithm.common.util.data_reader.DatesetRead import DatasetReader
 
 
 class DBLPDataset(DatasetReader):

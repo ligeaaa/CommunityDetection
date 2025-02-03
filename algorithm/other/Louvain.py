@@ -10,7 +10,7 @@ Class Description:
 @license: MIT
 """
 
-from common.util.decorator import time_record
+from algorithm.common.util.decorator import time_record
 import community as community_louvain
 import networkx as nx
 

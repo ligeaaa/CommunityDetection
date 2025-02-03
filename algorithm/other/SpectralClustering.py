@@ -10,10 +10,9 @@ Class Description:
 @license: MIT
 """
 from community import community_louvain
-from common.util.decorator import time_record
+from algorithm.common.util.decorator import time_record
 from sklearn.cluster import SpectralClustering
 import networkx as nx
-import numpy as np
 
 
 @time_record

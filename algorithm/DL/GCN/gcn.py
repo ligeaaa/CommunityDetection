@@ -1,5 +1,4 @@
 import time
-import numpy as np
 import torch
 from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv
@@ -11,7 +10,7 @@ from networkx.algorithms.community.quality import modularity
 from torch_geometric.loader import DataLoader
 from torch_geometric.utils import degree
 
-from common.util.decorator import time_record
+from algorithm.common.util.decorator import time_record
 
 
 # 定义 GCN 模型

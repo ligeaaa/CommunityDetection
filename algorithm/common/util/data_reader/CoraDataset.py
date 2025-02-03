@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
-import os
 
-from common.util.data_reader.DatesetRead import DatasetReader
+from algorithm.common.util.data_reader.DatesetRead import DatasetReader
 
 
 class CoraDataset(DatasetReader):

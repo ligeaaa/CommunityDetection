@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 # coding=utf-8
 import networkx as nx
-import numpy as np
 from networkx import Graph
 from sklearn.cluster import SpectralClustering
 
 from algorithm.algorithm_dealer import Algorithm
-from common.util.decorator import time_record
-from common.util.drawer import draw_communities
-from common.util.result_evaluation import CommunityDetectionMetrics
 
 
 class SpectralCluster(Algorithm):

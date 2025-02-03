@@ -15,7 +15,7 @@ from sklearn.metrics import jaccard_score
 from scipy.cluster.hierarchy import linkage, fcluster
 import numpy as np
 
-from common.util.decorator import time_record
+from algorithm.common.util.decorator import time_record
 
 
 @time_record

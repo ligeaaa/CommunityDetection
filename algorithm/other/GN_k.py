@@ -13,7 +13,7 @@ Class Description:
 import networkx as nx
 from networkx.algorithms.community import girvan_newman
 
-from common.util.decorator import time_record
+from algorithm.common.util.decorator import time_record
 
 
 @time_record

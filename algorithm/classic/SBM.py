@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 # coding=utf-8
-import networkx as nx
 from networkx import Graph
 from networkx.generators.community import stochastic_block_model
 
 from algorithm.algorithm_dealer import Algorithm
-from common.util.drawer import draw_communities
-from common.util.result_evaluation import CommunityDetectionMetrics
 import numpy as np
 import random
 from itertools import combinations

@@ -11,14 +11,14 @@ from algorithm.DL.GCN.gcn import GCN_train_and_evaluate
 from algorithm.classic.SBM import sbm_algorithm
 from algorithm.classic.louvain import louvain_algorithm
 from algorithm.classic.spectral_clustering import spectral_clustering_algorithm
-from common.util.data_reader.AmazonDataset import AmazonDataset
-from common.util.data_reader.AmericanFootball import AmericanCollegeFootball
-from common.util.data_reader.CoraDataset import CoraDataset
-from common.util.data_reader.PoliticalBooksDataset import PolbooksDataset
-from common.util.data_reader.ZKClubDataset import ZKClubDataset
-from common.util.data_reader.EmailEuCoreDataset import EmailEuCoreDataset
-from common.util.data_reader.dataset_dealer import Dataset
-from common.util.result_evaluation import CommunityDetectionMetrics
+from algorithm.common.util.data_reader.AmazonDataset import AmazonDataset
+from algorithm.common.util.data_reader.AmericanFootball import AmericanCollegeFootball
+from algorithm.common.util.data_reader.CoraDataset import CoraDataset
+from algorithm.common.util.data_reader.PoliticalBooksDataset import PolbooksDataset
+from algorithm.common.util.data_reader.ZKClubDataset import ZKClubDataset
+from algorithm.common.util.data_reader.EmailEuCoreDataset import EmailEuCoreDataset
+from algorithm.common.util.data_reader.dataset_dealer import Dataset
+from algorithm.common.util.result_evaluation import CommunityDetectionMetrics
 import pandas as pd  # 用于生成汇总报告
 from openpyxl.styles import PatternFill, Font
 
