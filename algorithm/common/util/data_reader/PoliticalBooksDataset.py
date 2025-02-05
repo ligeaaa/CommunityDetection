@@ -11,7 +11,9 @@ class PolbooksDataset(DatasetReader):
         self.truthtable_path = r"./data/political_books/truthtable.txt"
 
         # Define the number of communities
-        self.number_of_community = 3  # three communities: neutral, conservative, and liberal
+        self.number_of_community = (
+            3  # three communities: neutral, conservative, and liberal
+        )
         # name of dataset
         self.dataset_name = "PolbooksDataset"
 
@@ -21,16 +23,18 @@ class PolbooksDataset(DatasetReader):
         :return: list of [int, int], each entry [a, b] indicates an edge between nodes a and b
         """
         content = []
-        min_node = float('inf')  # initialize minimum node value to infinity
+        min_node = float("inf")  # initialize minimum node value to infinity
 
-        with open(self.data_path, 'r', encoding='utf-8') as file:
+        with open(self.data_path, "r", encoding="utf-8") as file:
             for line in file:
                 # Skip header row if necessary
                 if line.startswith("Source"):
                     continue
 
                 # Split line content and extract nodes
-                numbers = line.split()[:2]  # Only take the first two columns (Source, Target)
+                numbers = line.split()[
+                    :2
+                ]  # Only take the first two columns (Source, Target)
                 numbers = [int(num) for num in numbers]
                 content.append(numbers)
 
@@ -51,9 +55,9 @@ class PolbooksDataset(DatasetReader):
         # Mapping for community labels to integers
         community_map = {"neutral": 0, "conservative": 1, "liberal": 2}
         content = []
-        min_node = float('inf')  # Initialize min node to handle normalization
+        min_node = float("inf")  # Initialize min node to handle normalization
 
-        with open(self.truthtable_path, 'r', encoding='utf-8') as file:
+        with open(self.truthtable_path, "r", encoding="utf-8") as file:
             for line in file:
                 # Skip header row
                 if line.startswith("Id"):
@@ -63,7 +67,9 @@ class PolbooksDataset(DatasetReader):
                 parts = line.split()
                 node_id = int(parts[0])  # Node ID
                 community_label = parts[-1].strip()  # Community label
-                community_id = community_map.get(community_label, -1)  # Map label to community ID
+                community_id = community_map.get(
+                    community_label, -1
+                )  # Map label to community ID
 
                 if community_id != -1:
                     content.append([node_id, community_id])
@@ -73,7 +79,9 @@ class PolbooksDataset(DatasetReader):
 
         # Normalize node IDs if they do not start from 0
         if min_node != 0:
-            content = [[node_id - min_node, community_id] for node_id, community_id in content]
+            content = [
+                [node_id - min_node, community_id] for node_id, community_id in content
+            ]
 
         return content
 

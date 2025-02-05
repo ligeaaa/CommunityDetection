@@ -21,10 +21,10 @@ class ZKClubDataset(DatasetReader):
         :return: list[a, b], Person a and Person b have email correspondence.
         """
         content = []
-        min_person = float('inf')  # 初始化最小值为无穷大
+        min_person = float("inf")  # 初始化最小值为无穷大
 
         # 读取文件并找到最小编号
-        with open(self.data_path, 'r', encoding='utf-8') as file:
+        with open(self.data_path, "r", encoding="utf-8") as file:
             while True:
                 line = file.readline()
                 if not line:
@@ -49,11 +49,11 @@ class ZKClubDataset(DatasetReader):
         :return: list[a, b], Person a belongs to Department b.
         """
         content = []
-        min_person = float('inf')  # 初始化最小人员编号
-        min_department = float('inf')  # 初始化最小部门编号
+        min_person = float("inf")  # 初始化最小人员编号
+        min_department = float("inf")  # 初始化最小部门编号
 
         # 读取文件并找到最小编号
-        with open(self.truthtable_path, 'r', encoding='utf-8') as file:
+        with open(self.truthtable_path, "r", encoding="utf-8") as file:
             while True:
                 line = file.readline()
                 if not line:
@@ -69,9 +69,11 @@ class ZKClubDataset(DatasetReader):
 
         # 如果人员编号或部门编号不是从0开始，则调整它们
         if min_person != 0 or min_department != 0:
-            content = [[person - min_person, department - min_department] for person, department in content]
+            content = [
+                [person - min_person, department - min_department]
+                for person, department in content
+            ]
 
         return content
 
-    def get_base_information(self):
-        ...
+    def get_base_information(self): ...

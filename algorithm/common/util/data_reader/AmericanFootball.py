@@ -20,9 +20,11 @@ class AmericanCollegeFootball(DatasetReader):
         :return: list[[int, int]], Each element is [x, y], indicating an edge exists between nodes x and y.
         """
         content = []
-        min_node = float('inf')  # Initialize the minimum node ID to a large value to find the smallest node ID
+        min_node = float(
+            "inf"
+        )  # Initialize the minimum node ID to a large value to find the smallest node ID
 
-        with open(self.data_path, 'r', encoding='utf-8') as file:
+        with open(self.data_path, "r", encoding="utf-8") as file:
             for line in file:
                 # Convert each line into a pair of integers [x, y]
                 nodes = [int(num) for num in line.split()]
@@ -43,10 +45,10 @@ class AmericanCollegeFootball(DatasetReader):
         :return: list[[int, int]], Each element is [x, y], indicating node x belongs to community y.
         """
         content = []
-        min_node = float('inf')  # Initialize the minimum node ID
-        min_community = float('inf')  # Initialize the minimum community ID
+        min_node = float("inf")  # Initialize the minimum node ID
+        min_community = float("inf")  # Initialize the minimum community ID
 
-        with open(self.truthtable_path, 'r', encoding='utf-8') as file:
+        with open(self.truthtable_path, "r", encoding="utf-8") as file:
             for line in file:
                 # Convert each line into a pair of integers [x, y]
                 nodes = [int(num) for num in line.split()]
@@ -58,7 +60,10 @@ class AmericanCollegeFootball(DatasetReader):
 
         # Adjust node and community IDs if they do not start from 0
         if min_node != 0 or min_community != 0:
-            content = [[node - min_node, community - min_community] for node, community in content]
+            content = [
+                [node - min_node, community - min_community]
+                for node, community in content
+            ]
 
         return content
 

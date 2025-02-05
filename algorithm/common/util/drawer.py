@@ -15,10 +15,12 @@ import random
 import networkx as nx
 from matplotlib import pyplot as plt
 
-
 # def get_pos()
 
-def draw_communities(G, pos, communities=None, max_nodes=200, draw_networkx_labels=True):
+
+def draw_communities(
+    G, pos, communities=None, max_nodes=200, draw_networkx_labels=True
+):
     total_nodes = G.number_of_nodes()
 
     # 如果节点数超过 max_nodes，则随机选择一部分节点
@@ -27,13 +29,17 @@ def draw_communities(G, pos, communities=None, max_nodes=200, draw_networkx_labe
         # 如果有 communities 则优先保证每个社区有一定数量的节点
         if communities:
             for community in communities:
-                sample_size = min(len(community), max_nodes // len(communities))  # 确保每个社区至少有一些节点
+                sample_size = min(
+                    len(community), max_nodes // len(communities)
+                )  # 确保每个社区至少有一些节点
                 nodes.update(random.sample(community, sample_size))
 
         # 补充随机节点直到达到 max_nodes
         remaining_nodes = max_nodes - len(nodes)
         if remaining_nodes > 0:
-            remaining_random_nodes = random.sample(list(set(G.nodes()) - nodes), remaining_nodes)
+            remaining_random_nodes = random.sample(
+                list(set(G.nodes()) - nodes), remaining_nodes
+            )
             nodes.update(remaining_random_nodes)
 
         # 生成子图
@@ -44,23 +50,35 @@ def draw_communities(G, pos, communities=None, max_nodes=200, draw_networkx_labe
 
     if communities:
         # 筛选出子图中的社区节点
-        subgraph_communities = [[node for node in community if node in subgraph] for community in communities]
+        subgraph_communities = [
+            [node for node in community if node in subgraph]
+            for community in communities
+        ]
         # 使用 itertools 循环分配颜色
-        colors = itertools.cycle(['r', 'g', 'b', 'c', 'm', 'y', 'k'])
+        colors = itertools.cycle(["r", "g", "b", "c", "m", "y", "k"])
 
         # 绘制不同社区的节点
         for community, color in zip(subgraph_communities, colors):
-            nx.draw_networkx_nodes(subgraph, pos, nodelist=community, node_color=color, node_size=300, alpha=0.7)
+            nx.draw_networkx_nodes(
+                subgraph,
+                pos,
+                nodelist=community,
+                node_color=color,
+                node_size=300,
+                alpha=0.7,
+            )
     else:
         # 如果没有社区划分，则绘制原始图
-        nx.draw_networkx_nodes(subgraph, pos, node_size=300, alpha=0.7, node_color='lightblue')
+        nx.draw_networkx_nodes(
+            subgraph, pos, node_size=300, alpha=0.7, node_color="lightblue"
+        )
 
     # 绘制所有边
     nx.draw_networkx_edges(subgraph, pos, edgelist=subgraph.edges(), alpha=0.2)
 
     # 绘制节点标签
-    if draw_networkx_labels == True:
-        nx.draw_networkx_labels(subgraph, pos, font_size=8, font_color='black')
+    if draw_networkx_labels is True:
+        nx.draw_networkx_labels(subgraph, pos, font_size=8, font_color="black")
 
     # 显示图
     plt.show()

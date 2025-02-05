@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # coding=utf-8
+from collections import Counter, defaultdict
+
 from algorithm.common.util.data_reader.DatesetRead import DatasetReader
-from collections import defaultdict, Counter
 
 
 class AmazonDataset(DatasetReader):
@@ -37,19 +38,21 @@ class AmazonDataset(DatasetReader):
         """
         # Step 1: Read community file to get nodes with community affiliations
         node_with_community = set()
-        with open(self.truthtable_path, 'r', encoding='utf-8') as file:
+        with open(self.truthtable_path, "r", encoding="utf-8") as file:
             for line in file:
                 community = [int(num) for num in line.split()]
                 node_with_community.update(community)  # Add nodes to the set
 
         # Step 2: Create a mapping from original node IDs to consecutive IDs starting from 0
-        node_mapping = {node: idx for idx, node in enumerate(sorted(node_with_community))}
+        node_mapping = {
+            node: idx for idx, node in enumerate(sorted(node_with_community))
+        }
 
         # Step 3: Filter edges in the graph file
         filtered_edges = []
-        with open(self.data_path, 'r', encoding='utf-8') as file:
+        with open(self.data_path, "r", encoding="utf-8") as file:
             for line in file:
-                if line.startswith('#'):
+                if line.startswith("#"):
                     continue
 
                 # Convert each line's content to integers
@@ -58,7 +61,9 @@ class AmazonDataset(DatasetReader):
                 # Only include edges where both nodes have community affiliation
                 if nodes[0] in node_with_community and nodes[1] in node_with_community:
                     # Map nodes to consecutive IDs and store the edge
-                    filtered_edges.append([node_mapping[nodes[0]], node_mapping[nodes[1]]])
+                    filtered_edges.append(
+                        [node_mapping[nodes[0]], node_mapping[nodes[1]]]
+                    )
 
         return filtered_edges, node_mapping
 
@@ -79,29 +84,40 @@ class AmazonDataset(DatasetReader):
         community_list = []  # Collect all communities as lists of nodes
 
         # Step 1: Parse the community file and assign nodes to communities
-        with open(self.truthtable_path, 'r', encoding='utf-8') as file:
+        with open(self.truthtable_path, "r", encoding="utf-8") as file:
             for line in file:
                 community = [int(num) for num in line.split()]
                 community_list.append(community)  # Add community to list
 
                 # Add each node to its respective community list
                 for node in community:
-                    node_to_communities[node].append(len(community_list) - 1)  # Use index as community ID
+                    node_to_communities[node].append(
+                        len(community_list) - 1
+                    )  # Use index as community ID
 
         # Step 2: Assign each node to the largest community it belongs to using the precomputed node mapping
         node_community_pairs = []
         for node, community_ids in node_to_communities.items():
             most_common_community = Counter(community_ids).most_common(1)[0][0]
-            if node in self.node_mapping:  # Only include nodes with community affiliation
+            if (
+                node in self.node_mapping
+            ):  # Only include nodes with community affiliation
                 mapped_node = self.node_mapping[node]
                 node_community_pairs.append((mapped_node, most_common_community))
 
         # Step 3: Map community IDs to a consecutive sequence starting from 0
-        unique_communities = sorted({community for _, community in node_community_pairs})
-        community_mapping = {old_id: new_id for new_id, old_id in enumerate(unique_communities)}
+        unique_communities = sorted(
+            {community for _, community in node_community_pairs}
+        )
+        community_mapping = {
+            old_id: new_id for new_id, old_id in enumerate(unique_communities)
+        }
 
         # Step 4: Apply the community mapping to node-community pairs
-        truth_table = [[node, community_mapping[community]] for node, community in node_community_pairs]
+        truth_table = [
+            [node, community_mapping[community]]
+            for node, community in node_community_pairs
+        ]
 
         return truth_table
 
@@ -119,6 +135,7 @@ class AmazonDataset(DatasetReader):
         print(f"Number of Nodes: {num_nodes}")
         print(f"Number of Edges: {num_edges}")
         print(f"Number of Communities: {num_communities}")
+
 
 # Example usage:
 # dataset = AmazonDataset()

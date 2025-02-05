@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 # coding=utf-8
+
 import networkx as nx
 import torch
 
 from algorithm.algorithm_dealer import AlgorithmDealer
-from algorithm.classic.SBM import SBM
 from algorithm.classic.louvain import Louvain
+from algorithm.classic.SBM import SBM
 from algorithm.classic.spectral_clustering import SpectralCluster
 from algorithm.common.util.data_reader.AmazonDataset import AmazonDataset
 from algorithm.common.util.data_reader.AmericanFootball import AmericanCollegeFootball
 from algorithm.common.util.data_reader.CoraDataset import CoraDataset
+from algorithm.common.util.data_reader.dataset_dealer import Dataset
 from algorithm.common.util.data_reader.EmailEuCoreDataset import EmailEuCoreDataset
 from algorithm.common.util.data_reader.PoliticalBooksDataset import PolbooksDataset
 from algorithm.common.util.data_reader.ZKClubDataset import ZKClubDataset
-from algorithm.common.util.data_reader.dataset_dealer import Dataset
 from algorithm.common.util.drawer import draw_communities
 from algorithm.common.util.result_evaluation import CommunityDetectionMetrics
 

@@ -1,10 +1,11 @@
 import math
+
 import torch
+import torch.nn.functional as F
+from sklearn.cluster import KMeans
 from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv
 from torch_geometric.utils import degree
-import torch.nn.functional as F
-from sklearn.cluster import KMeans
 
 
 # 定义图自编码器模型
@@ -62,9 +63,18 @@ def contrastive_loss(z, edge_index, margin=1.0):
 
 
 # 训练函数，增加提前停止机制
-def train_autoencoder(model, data, optimizer, scheduler, epochs=100, margin=1.0, patience=10, tolerance=1e-4):
+def train_autoencoder(
+    model,
+    data,
+    optimizer,
+    scheduler,
+    epochs=100,
+    margin=1.0,
+    patience=10,
+    tolerance=1e-4,
+):
     model.train()
-    best_loss = float('inf')
+    best_loss = float("inf")
     patience_counter = 0
 
     for epoch in range(epochs):
@@ -93,8 +103,10 @@ def train_autoencoder(model, data, optimizer, scheduler, epochs=100, margin=1.0,
 
         # 打印损失和学习率信息
         if (epoch + 1) % 100 == 0 or patience_counter >= patience:
-            current_lr = optimizer.param_groups[0]['lr']
-            print(f"Epoch {epoch + 1}/{epochs}, Loss: {loss.item():.4f}, Learning Rate: {current_lr:.6f}")
+            current_lr = optimizer.param_groups[0]["lr"]
+            print(
+                f"Epoch {epoch + 1}/{epochs}, Loss: {loss.item():.4f}, Learning Rate: {current_lr:.6f}"
+            )
 
     return best_loss.item()
 
@@ -114,7 +126,15 @@ def cluster_communities(embeddings, num_communities=2):
 
 
 # 主函数，进行无监督训练
-def GCN_train_unsupervised(raw_data, device, epochs=100, learning_rate=0.01, margin=1.0, patience=100, tolerance=1e-4):
+def GCN_train_unsupervised(
+    raw_data,
+    device,
+    epochs=100,
+    learning_rate=0.01,
+    margin=1.0,
+    patience=100,
+    tolerance=1e-4,
+):
     data = load_data(raw_data, device)
 
     input_dim = data.x.size(1)
@@ -126,9 +146,20 @@ def GCN_train_unsupervised(raw_data, device, epochs=100, learning_rate=0.01, mar
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # 使用 ReduceLROnPlateau 调度器，根据验证损失动态调整学习率
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, min_lr=1e-6)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.5, patience=5, min_lr=1e-6
+    )
 
-    train_autoencoder(model, data, optimizer, scheduler, epochs=epochs, margin=margin, patience=patience, tolerance=tolerance)
+    train_autoencoder(
+        model,
+        data,
+        optimizer,
+        scheduler,
+        epochs=epochs,
+        margin=margin,
+        patience=patience,
+        tolerance=tolerance,
+    )
 
     embeddings = model.encoder(data)  # 获取节点嵌入
     communities = cluster_communities(embeddings, num_communities=2)  # 对嵌入进行聚类
@@ -141,5 +172,13 @@ if __name__ == "__main__":
     raw_data = [[0, 1], [1, 2], [2, 3], [3, 0], [0, 2], [1, 3]]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    communities = GCN_train_unsupervised(raw_data, device, epochs=1000, learning_rate=0.01, margin=1.0, patience=20, tolerance=1e-4)
+    communities = GCN_train_unsupervised(
+        raw_data,
+        device,
+        epochs=1000,
+        learning_rate=0.01,
+        margin=1.0,
+        patience=20,
+        tolerance=1e-4,
+    )
     print("社区划分结果:", communities)

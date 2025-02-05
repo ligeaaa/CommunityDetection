@@ -2,8 +2,8 @@
 # coding=utf-8
 # 2. 定义GCN模型
 import torch
-from torch_geometric.nn import GCNConv
 import torch.nn.functional as F
+from torch_geometric.nn import GCNConv
 
 
 # 定义 GCN 模型

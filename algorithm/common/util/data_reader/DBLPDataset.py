@@ -21,7 +21,7 @@ class DBLPDataset(DatasetReader):
         :return: list[[a, b]], where a and b are nodes with an undirected edge between them.
         """
         content = []
-        with open(self.data_path, 'r', encoding='utf-8') as file:
+        with open(self.data_path, "r", encoding="utf-8") as file:
             for line in file:
                 # 忽略注释和空行
                 if line.startswith("#") or not line.strip():
@@ -40,7 +40,7 @@ class DBLPDataset(DatasetReader):
         :return: list[[x, y]], where x is a node and y is the community it belongs to.
         """
         content = []
-        with open(self.truthtable_path, 'r', encoding='utf-8') as file:
+        with open(self.truthtable_path, "r", encoding="utf-8") as file:
             community_id = 0  # 初始社区编号
             for line in file:
                 # Ignore empty lines
@@ -63,5 +63,7 @@ class DBLPDataset(DatasetReader):
         """
         Provides basic information about the dataset, including the number of communities.
         """
-        print(f"DBLP Dataset - Total Nodes: {len(set(node for edge in self.read_data() for node in edge))}")
+        print(
+            f"DBLP Dataset - Total Nodes: {len(set(node for edge in self.read_data() for node in edge))}"
+        )
         print(f"Total Communities: {self.number_of_community}")

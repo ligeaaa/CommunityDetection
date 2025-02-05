@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # coding=utf-8
 import networkx as nx
-from networkx.algorithms.community import girvan_newman
 import networkx.algorithms.community as community_louvain
+from networkx.algorithms.community import girvan_newman
 
 from algorithm.common.util.decorator import time_record
 from algorithm.common.util.drawer import draw_communities
@@ -58,7 +58,7 @@ def GN_algorithm(edge_list, max_iter=10, modularity_threshold=0.5, frequency=2):
     return G, best_communities
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 示例输入：边的列表
     edge_list = [[1, 2], [2, 3], [3, 4], [4, 5], [5, 1], [1, 3], [2, 4], [4, 6], [6, 7]]
     truth_table = [[7, 0], [6, 0], [4, 1], [5, 1], [3, 1], [2, 1], [1, 1]]

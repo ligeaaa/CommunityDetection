@@ -1,12 +1,13 @@
 import time
-import numpy as np
+
+import networkx as nx
 import torch
+import torch.nn.functional as F
+from networkx.algorithms.community.quality import modularity
+from sklearn.metrics import normalized_mutual_info_score
 from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv
-import torch.nn.functional as F
-from sklearn.metrics import normalized_mutual_info_score
-from networkx.algorithms.community.quality import modularity
-import networkx as nx
+
 
 # 定义 GCN 模型
 class GCN(torch.nn.Module):
@@ -22,13 +23,16 @@ class GCN(torch.nn.Module):
         x = self.conv2(x, edge_index)
         return F.log_softmax(x, dim=1)
 
+
 # 封装接口函数
 def run_cora_classification(content_path, cites_path, epochs=200, lr=0.01):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # 指定在 GPU 上运行
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() else "cpu"
+    )  # 指定在 GPU 上运行
 
     # 加载 Cora 数据集并构建图结构
     def load_cora_data(content_path, cites_path):
-        with open(content_path, 'r') as f:
+        with open(content_path, "r") as f:
             content = f.readlines()
         node_features = []
         node_labels = []
@@ -54,19 +58,23 @@ def run_cora_classification(content_path, cites_path, epochs=200, lr=0.01):
         node_labels = torch.tensor(node_labels, dtype=torch.long).to(device)
 
         edge_index = []
-        with open(cites_path, 'r') as f:
+        with open(cites_path, "r") as f:
             for line in f.readlines():
                 src, dest = map(int, line.strip().split())
                 src_idx = node_ids.index(src)
                 dest_idx = node_ids.index(dest)
                 edge_index.append([src_idx, dest_idx])
 
-        edge_index = torch.tensor(edge_index, dtype=torch.long).t().contiguous().to(device)
+        edge_index = (
+            torch.tensor(edge_index, dtype=torch.long).t().contiguous().to(device)
+        )
 
         return node_features, node_labels, edge_index, len(label_dict)
 
     # 加载数据
-    node_features, node_labels, edge_index, num_classes = load_cora_data(content_path, cites_path)
+    node_features, node_labels, edge_index, num_classes = load_cora_data(
+        content_path, cites_path
+    )
     data = Data(x=node_features, edge_index=edge_index, y=node_labels).to(device)
 
     # 创建数据掩码
@@ -79,7 +87,9 @@ def run_cora_classification(content_path, cites_path, epochs=200, lr=0.01):
     data.test_mask[train_size:] = True
 
     # 初始化模型并将其移动到指定设备
-    model = GCN(input_dim=node_features.shape[1], hidden_dim=64, output_dim=num_classes).to(device)
+    model = GCN(
+        input_dim=node_features.shape[1], hidden_dim=64, output_dim=num_classes
+    ).to(device)
 
     # 训练模型
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
@@ -95,7 +105,7 @@ def run_cora_classification(content_path, cites_path, epochs=200, lr=0.01):
         optimizer.step()
 
         if (epoch + 1) % 10 == 0:
-            print(f'Epoch {epoch + 1}/{epochs}, Loss: {loss.item():.4f}')
+            print(f"Epoch {epoch + 1}/{epochs}, Loss: {loss.item():.4f}")
 
     # 记录结束时间
     end_time = time.time()
@@ -110,11 +120,16 @@ def run_cora_classification(content_path, cites_path, epochs=200, lr=0.01):
     # 计算 Accuracy，精确到小数点后16位
     correct = (pred[data.test_mask] == data.y[data.test_mask]).sum()
     acc = round(int(correct) / int(data.test_mask.sum()), 16)
-    print(f'Test Accuracy: {acc:.16f}')
+    print(f"Test Accuracy: {acc:.16f}")
 
     # 计算 NMI，精确到小数点后16位
-    nmi = round(normalized_mutual_info_score(data.y[data.test_mask].cpu(), pred[data.test_mask].cpu()), 16)
-    print(f'Test NMI: {nmi:.16f}')
+    nmi = round(
+        normalized_mutual_info_score(
+            data.y[data.test_mask].cpu(), pred[data.test_mask].cpu()
+        ),
+        16,
+    )
+    print(f"Test NMI: {nmi:.16f}")
 
     # 计算 Modularity，精确到小数点后16位
     edge_list = edge_index.cpu().t().numpy()
@@ -125,17 +140,19 @@ def run_cora_classification(content_path, cites_path, epochs=200, lr=0.01):
         communities[community].append(idx)
     communities = list(communities.values())
     mod = round(modularity(G, communities), 16)
-    print(f'Modularity: {mod:.16f}')
+    print(f"Modularity: {mod:.16f}")
 
     return model, runtime, acc, nmi, mod
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 使用接口示例
     content_path = "path_to_cora.content"  # 请将此路径替换为您的 cora.content 文件路径
     cites_path = "path_to_cora.cites"  # 请将此路径替换为您的 cora.cites 文件路径
 
-    model, runtime, accuracy, nmi, modularity_value = run_cora_classification(content_path, cites_path)
+    model, runtime, accuracy, nmi, modularity_value = run_cora_classification(
+        content_path, cites_path
+    )
     print("最终测试准确率:", accuracy)
     print("NMI:", nmi)
     print("Modularity:", modularity_value)

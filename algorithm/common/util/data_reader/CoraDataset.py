@@ -24,7 +24,7 @@ class CoraDataset(DatasetReader):
         node_map = {}  # 节点重新编号映射
         current_id = 0
 
-        with open(self.data_path, 'r', encoding='utf-8') as file:
+        with open(self.data_path, "r", encoding="utf-8") as file:
             for line in file:
                 cited, citing = map(int, line.split())
 
@@ -50,20 +50,20 @@ class CoraDataset(DatasetReader):
         :return: list[[paper_id, community_label]], paper_id属于community_label表示的领域。
         """
         labels = {
-            'Case_Based': 0,
-            'Genetic_Algorithms': 1,
-            'Neural_Networks': 2,
-            'Probabilistic_Methods': 3,
-            'Reinforcement_Learning': 4,
-            'Rule_Learning': 5,
-            'Theory': 6
+            "Case_Based": 0,
+            "Genetic_Algorithms": 1,
+            "Neural_Networks": 2,
+            "Probabilistic_Methods": 3,
+            "Reinforcement_Learning": 4,
+            "Rule_Learning": 5,
+            "Theory": 6,
         }
 
         content = []
         node_map = {}  # 使用同一个node_map与read_data一致
         current_id = 0
 
-        with open(self.truthtable_path, 'r', encoding='utf-8') as file:
+        with open(self.truthtable_path, "r", encoding="utf-8") as file:
             for line in file:
                 parts = line.strip().split()
                 paper_id = int(parts[0])

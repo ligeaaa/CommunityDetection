@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
-import networkx as nx
 import community as community_louvain
+import networkx as nx
 from networkx import Graph
 
 from algorithm.algorithm_dealer import Algorithm, AlgorithmDealer
@@ -24,12 +24,14 @@ class Louvain(Algorithm):
                 communities[community] = []
             communities[community].append(node)
 
-        best_communities = [sorted(nodes) for nodes in communities.values()]  # 按节点ID排序
+        best_communities = [
+            sorted(nodes) for nodes in communities.values()
+        ]  # 按节点ID排序
 
         return best_communities
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 示例输入：边的列表
     edge_list = [[1, 2], [2, 3], [3, 4], [4, 5], [5, 1], [1, 3], [2, 4], [4, 6], [6, 7]]
     truth_table = [[7, 0], [6, 0], [4, 1], [5, 1], [3, 1], [2, 1], [1, 1]]

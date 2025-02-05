@@ -10,9 +10,9 @@ Class Description:
 @license: MIT
 """
 
-from sklearn.cluster import KMeans
 import networkx as nx
 import numpy as np
+from sklearn.cluster import KMeans
 
 from algorithm.common.util.decorator import time_record
 

@@ -16,9 +16,9 @@ from functools import wraps
 
 
 def time_record(original_function):
-    """  
-    用于获取目标函数名称与入参与其执行时间的装饰器类  
-    在执行方法后，在控制台输出类似 target_function(3, '测试', key='值') took 3.0009 seconds to run, from 1715336837.8986 to 1715336840.8995 的消息  
+    """
+    用于获取目标函数名称与入参与其执行时间的装饰器类
+    在执行方法后，在控制台输出类似 target_function(3, '测试', key='值') took 3.0009 seconds to run, from 1715336837.8986 to 1715336840.8995 的消息
     """
 
     @wraps(original_function)
@@ -26,9 +26,7 @@ def time_record(original_function):
         start = time.time()
         result = original_function(*args, **kwargs)
         end = time.time()
-        signature = ", ".join([repr(a) for a in args] + [f"{k}={v!r}" for k, v in kwargs.items()])
-        print(
-            f"took {end - start:.4f} seconds to run, from {start:.4f} to {end:.4f}")
+        print(f"took {end - start:.4f} seconds to run, from {start:.4f} to {end:.4f}")
         return result
 
     @wraps(original_function)
@@ -36,9 +34,7 @@ def time_record(original_function):
         start = time.time()
         result = await original_function(*args, **kwargs)
         end = time.time()
-        signature = ", ".join([repr(a) for a in args] + [f"{k}={v!r}" for k, v in kwargs.items()])
-        print(
-            f"took {end - start:.4f} seconds to run, from {start:.4f} to {end:.4f}")
+        print(f"took {end - start:.4f} seconds to run, from {start:.4f} to {end:.4f}")
         return result
 
     if asyncio.iscoroutinefunction(original_function):

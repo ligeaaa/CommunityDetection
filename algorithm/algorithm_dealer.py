@@ -9,8 +9,7 @@ class Algorithm:
     def __init__(self):
         self.algorithm_name = ...
 
-    def process(self, G: Graph, **kwargs) -> list:
-        ...
+    def process(self, G: Graph, **kwargs) -> list: ...
 
 
 class AlgorithmResult:

@@ -9,7 +9,9 @@ class EmailEuCoreDataset(DatasetReader):
         super().__init__()
         self.data_path = r".\\data\\email-Eu-core network\\email-Eu-core.txt"
         # truthtable path
-        self.truthtable_path = r".\\data\\email-Eu-core network\\email-Eu-core-department-labels.txt"
+        self.truthtable_path = (
+            r".\\data\\email-Eu-core network\\email-Eu-core-department-labels.txt"
+        )
         # number of community
         self.number_of_community = 42
         # name of dataset
@@ -21,8 +23,8 @@ class EmailEuCoreDataset(DatasetReader):
         :return: list[a, b], Person a and Person b have email correspondence.
         """
         content = []
-        min_person = float('inf')  # 初始化最小值为正无穷大，便于找到最小编号
-        with open(self.data_path, 'r', encoding='utf-8') as file:
+        min_person = float("inf")  # 初始化最小值为正无穷大，便于找到最小编号
+        with open(self.data_path, "r", encoding="utf-8") as file:
             while True:
                 line = file.readline()
                 if not line:
@@ -48,9 +50,9 @@ class EmailEuCoreDataset(DatasetReader):
         :return: list[a, b], Person a belongs to Department b.
         """
         content = []
-        min_person = float('inf')  # 初始化最小值为正无穷大，便于找到最小人员编号
-        min_department = float('inf')  # 初始化最小值为正无穷大，便于找到最小部门编号
-        with open(self.truthtable_path, 'r', encoding='utf-8') as file:
+        min_person = float("inf")  # 初始化最小值为正无穷大，便于找到最小人员编号
+        min_department = float("inf")  # 初始化最小值为正无穷大，便于找到最小部门编号
+        with open(self.truthtable_path, "r", encoding="utf-8") as file:
             while True:
                 line = file.readline()
                 if not line:
@@ -67,9 +69,11 @@ class EmailEuCoreDataset(DatasetReader):
 
         # 如果人员编号或部门编号不是0，则将它们分别减去最小值，使其从0开始
         if min_person != 0 or min_department != 0:
-            content = [[person - min_person, department - min_department] for person, department in content]
+            content = [
+                [person - min_person, department - min_department]
+                for person, department in content
+            ]
 
         return content
 
-    def get_base_information(self):
-        ...
+    def get_base_information(self): ...

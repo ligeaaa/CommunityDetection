@@ -16,11 +16,14 @@ class RQMainWindow(QMainWindow):
 
     #     loguru.logger.debug(f"{a0.key()} {a0.nativeScanCode()} {a0.spontaneous()}")
     def closeEvent(self, event):
-        reply = QMessageBox.question(self, '提示',
-                                     "是否要关闭所有窗口?",
-                                     QMessageBox.Yes | QMessageBox.No,
-                                     QMessageBox.No)
-        # reply.setWindowFlags(Qt.FramelessWindowHint)  
+        reply = QMessageBox.question(
+            self,
+            "提示",
+            "是否要关闭所有窗口?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        # reply.setWindowFlags(Qt.FramelessWindowHint)
         if reply == QMessageBox.Yes:
             try:
                 event.accept()
@@ -28,7 +31,7 @@ class RQMainWindow(QMainWindow):
                     self.close_call()
             except Exception as e:
                 loguru.logger.exception(e)
-            sys.exit(0)  # 退出程序  
+            sys.exit(0)  # 退出程序
         else:
             event.ignore()
 
@@ -43,13 +46,13 @@ class RQMainWindow(QMainWindow):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.m_flag = True
-            self.m_Position = event.globalPos() - self.pos()  # 获取鼠标相对窗口的位置  
+            self.m_Position = event.globalPos() - self.pos()  # 获取鼠标相对窗口的位置
             event.accept()
-            self.setCursor(QCursor(Qt.OpenHandCursor))  # 更改鼠标图标  
+            self.setCursor(QCursor(Qt.OpenHandCursor))  # 更改鼠标图标
 
     def mouseMoveEvent(self, QMouseEvent):
         if Qt.LeftButton and self.m_flag:
-            self.move(QMouseEvent.globalPos() - self.m_Position)  # 更改窗口位置  
+            self.move(QMouseEvent.globalPos() - self.m_Position)  # 更改窗口位置
             QMouseEvent.accept()
 
     def mouseReleaseEvent(self, QMouseEvent):

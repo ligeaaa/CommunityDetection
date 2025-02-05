@@ -17,11 +17,10 @@ class SpectralCluster(Algorithm):
         adj_matrix = nx.to_numpy_array(G)
 
         # 使用谱聚类算法进行社区划分
-        spectral_model = SpectralClustering(n_clusters=kwargs['num_clusters'], affinity='precomputed', random_state=42)
+        spectral_model = SpectralClustering(
+            n_clusters=kwargs["num_clusters"], affinity="precomputed", random_state=42
+        )
         labels = spectral_model.fit_predict(adj_matrix)
-
-        # 检测节点编号是否从 0 开始或 1 开始
-        min_node = min(G.nodes())
 
         # 根据标签进行社区划分，调整节点编号
         communities = {}
@@ -32,7 +31,9 @@ class SpectralCluster(Algorithm):
 
         # 确保社区划分没有遗漏节点
         all_nodes = set(G.nodes())  # 图中所有节点
-        assigned_nodes = set(node for community in communities.values() for node in community)  # 所有已分配的节点
+        assigned_nodes = set(
+            node for community in communities.values() for node in community
+        )  # 所有已分配的节点
         unassigned_nodes = all_nodes - assigned_nodes  # 没有被分配的节点
 
         # 仅当确实有未分配节点时，将它们归为一个单独的社区
@@ -42,4 +43,3 @@ class SpectralCluster(Algorithm):
         best_communities = [sorted(nodes) for nodes in communities.values()]
 
         return best_communities
-

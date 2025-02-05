@@ -9,14 +9,17 @@ Class Description:
 - Briefly describe the purpose of this class here.
 @license: MIT
 """
-from community import community_louvain
-from algorithm.common.util.decorator import time_record
-from sklearn.cluster import SpectralClustering
 import networkx as nx
+from community import community_louvain
+from sklearn.cluster import SpectralClustering
+
+from algorithm.common.util.decorator import time_record
 
 
 @time_record
-def SpectralClustering_algorithm(edge_list, n_clusters=2, max_iter=10, modularity_threshold=0.5, frequency=2):
+def SpectralClustering_algorithm(
+    edge_list, n_clusters=2, max_iter=10, modularity_threshold=0.5, frequency=2
+):
     """
     优化后的 谱聚类 社区划分算法。
 
@@ -34,14 +37,15 @@ def SpectralClustering_algorithm(edge_list, n_clusters=2, max_iter=10, modularit
     # 将图转化为邻接矩阵
     adj_matrix = nx.to_numpy_array(G)
 
-    best_labels = None
     best_modularity = -1
     iteration = 0
     best_communities = []
 
     for _ in range(max_iter):
         # 谱聚类算法
-        spectral_model = SpectralClustering(n_clusters=n_clusters, affinity='precomputed', assign_labels='kmeans')
+        spectral_model = SpectralClustering(
+            n_clusters=n_clusters, affinity="precomputed", assign_labels="kmeans"
+        )
         labels = spectral_model.fit_predict(adj_matrix)
 
         # 将聚类结果转化为社区列表
@@ -54,11 +58,17 @@ def SpectralClustering_algorithm(edge_list, n_clusters=2, max_iter=10, modularit
         community_list = list(communities.values())
 
         # 将社区列表转换为节点到社区的字典
-        partition = {node: label for label, community in enumerate(community_list) for node in community}
+        partition = {
+            node: label
+            for label, community in enumerate(community_list)
+            for node in community
+        }
 
         # 每隔 'frequency' 次计算一次模块度
         if iteration % frequency == 0:
-            modularity = community_louvain.modularity(partition, G)  # 利用louvain模块的modularity计算
+            modularity = community_louvain.modularity(
+                partition, G
+            )  # 利用louvain模块的modularity计算
 
             # 更新最佳社区划分
             if modularity > best_modularity:

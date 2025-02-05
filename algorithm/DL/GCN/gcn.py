@@ -1,13 +1,14 @@
-import time
-import torch
-from torch_geometric.data import Data
-from torch_geometric.nn import GCNConv
-import torch.nn.functional as F
 import math
-from sklearn.metrics import normalized_mutual_info_score
+import time
+
 import networkx as nx
+import torch
+import torch.nn.functional as F
 from networkx.algorithms.community.quality import modularity
+from sklearn.metrics import normalized_mutual_info_score
+from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
+from torch_geometric.nn import GCNConv
 from torch_geometric.utils import degree
 
 from algorithm.common.util.decorator import time_record
@@ -26,6 +27,7 @@ class GCN(torch.nn.Module):
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.conv2(x, edge_index)
         return F.log_softmax(x, dim=1)
+
 
 # 数据加载和预处理
 def load_data(raw_data, truth_table, device, train_ratio=0.8):
@@ -51,8 +53,9 @@ def load_data(raw_data, truth_table, device, train_ratio=0.8):
     data.train_mask, data.test_mask = train_mask, test_mask
     return data
 
+
 # 训练函数
-def train(model, data, optimizer, loss_fn, epochs=100, device='cpu'):
+def train(model, data, optimizer, loss_fn, epochs=100, device="cpu"):
     model.train()
     data = data.to(device)
     for epoch in range(epochs):
@@ -63,8 +66,9 @@ def train(model, data, optimizer, loss_fn, epochs=100, device='cpu'):
         optimizer.step()
         torch.cuda.synchronize()  # 强制同步，确保所有 GPU 操作完成
 
+
 # 测试函数
-def test(model, data, device='cpu'):
+def test(model, data, device="cpu"):
     model.eval()
     data = data.to(device)
     with torch.no_grad():
@@ -73,7 +77,12 @@ def test(model, data, device='cpu'):
     correct = (predictions[data.test_mask] == data.y[data.test_mask]).sum()
     accuracy = correct.item() / data.test_mask.sum().item()
     accuracy = round(accuracy, 16)
-    nmi = round(normalized_mutual_info_score(data.y[data.test_mask].cpu(), predictions[data.test_mask].cpu()), 16)
+    nmi = round(
+        normalized_mutual_info_score(
+            data.y[data.test_mask].cpu(), predictions[data.test_mask].cpu()
+        ),
+        16,
+    )
     edge_list = data.edge_index.cpu().t().numpy()
     G = nx.Graph()
     G.add_edges_from(edge_list)
@@ -83,9 +92,12 @@ def test(model, data, device='cpu'):
     mod = round(modularity(G, list(communities.values())), 16)
     return accuracy, nmi, mod
 
+
 # 主训练和评估函数
 @time_record
-def GCN_train_and_evaluate(raw_data, truth_table, device, epochs=100, learning_rate=0.01, batch_size=32):
+def GCN_train_and_evaluate(
+    raw_data, truth_table, device, epochs=100, learning_rate=0.01, batch_size=32
+):
     data = load_data(raw_data, truth_table, device)
     input_dim = data.x.size(1)
     output_dim = len(set([community for _, community in truth_table]))
@@ -111,6 +123,7 @@ def GCN_train_and_evaluate(raw_data, truth_table, device, epochs=100, learning_r
     # 获取测试集上的准确率、NMI 和 Modularity
     accuracy, nmi, mod = test(model, data, device=device)
     return accuracy, nmi, mod, runtime
+
 
 # 示例运行
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding=utf-8
-import numpy as np
 import networkx as nx
-from sklearn.metrics import normalized_mutual_info_score, accuracy_score
+import numpy as np
 from scipy.optimize import linear_sum_assignment
+from sklearn.metrics import accuracy_score, normalized_mutual_info_score
 
 
 class CommunityDetectionMetrics:
@@ -28,7 +28,11 @@ class CommunityDetectionMetrics:
         使用匈牙利算法来最小化标签之间的差异，处理预测社区数量多于或少于真实社区的情况
         """
         # 获取真实标签
-        truth_labels = [self.node_to_truth_label[node] for community in self.communities for node in community]
+        truth_labels = [
+            self.node_to_truth_label[node]
+            for community in self.communities
+            for node in community
+        ]
         predicted_labels = []
         for i, community in enumerate(self.communities):
             predicted_labels.extend([i] * len(community))  # 将社区编号作为预测标签
@@ -59,7 +63,9 @@ class CommunityDetectionMetrics:
                 label_mapping[col] = -1  # 将多余的预测社区映射到 -1，表示无匹配
 
         # 处理未匹配的真实社区（如果有多余的真实社区）
-        unmatched_truth_communities = set(range(max_truth_label)) - set(label_mapping.values())
+        unmatched_truth_communities = set(range(max_truth_label)) - set(
+            label_mapping.values()
+        )
         for unmatched_truth in unmatched_truth_communities:
             # 将这些未匹配的真实社区映射到虚拟预测社区 -1
             label_mapping[len(label_mapping)] = unmatched_truth
@@ -81,7 +87,11 @@ class CommunityDetectionMetrics:
         计算归一化互信息 (NMI)。
         衡量两个不同划分之间相似性的指标，通常用于社区发现结果与真实社区划分之间的一致性评估。NMI 值在 0 到 1 之间，1 表示完全匹配，0 表示没有相关性。
         """
-        truth_labels = [self.node_to_truth_label[node] for community in self.communities for node in community]
+        truth_labels = [
+            self.node_to_truth_label[node]
+            for community in self.communities
+            for node in community
+        ]
         predicted_labels = []
         for i, community in enumerate(self.communities):
             predicted_labels.extend([i] * len(community))
@@ -99,7 +109,11 @@ class CommunityDetectionMetrics:
         计算社区划分的准确率 (ACC)。
         衡量社区划分中节点分类正确的比例。通过比较算法输出的社区标签与真实标签的匹配情况来计算准确率。
         """
-        truth_labels = [self.node_to_truth_label[node] for community in self.communities for node in community]
+        truth_labels = [
+            self.node_to_truth_label[node]
+            for community in self.communities
+            for node in community
+        ]
         predicted_labels = []
         for i, community in enumerate(self.communities):
             predicted_labels.extend([i] * len(community))
@@ -128,8 +142,4 @@ class CommunityDetectionMetrics:
         acc = self.accuracy()
         mod = self.modularity()
 
-        return {
-            "NMI": nmi,
-            "Accuracy": acc,
-            "Modularity": mod
-        }
+        return {"NMI": nmi, "Accuracy": acc, "Modularity": mod}

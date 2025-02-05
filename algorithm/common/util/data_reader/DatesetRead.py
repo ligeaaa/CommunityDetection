@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 
+
 class DatasetReader:
     def __init__(self):
         # Raw Data Path
@@ -26,5 +27,4 @@ class DatasetReader:
         """
         ...
 
-    def get_base_information(self):
-        ...
+    def get_base_information(self): ...

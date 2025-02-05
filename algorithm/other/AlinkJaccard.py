@@ -11,9 +11,9 @@ Class Description:
 """
 
 import networkx as nx
-from sklearn.metrics import jaccard_score
-from scipy.cluster.hierarchy import linkage, fcluster
 import numpy as np
+from scipy.cluster.hierarchy import fcluster, linkage
+from sklearn.metrics import jaccard_score
 
 from algorithm.common.util.decorator import time_record
 
@@ -42,8 +42,8 @@ def Alink_Jaccard_algorithm(edge_list, k):
             jaccard_matrix[j][i] = jaccard_matrix[i][j]
 
     # 进行层次聚类
-    Z = linkage(jaccard_matrix, method='average')
-    labels = fcluster(Z, k, criterion='maxclust')
+    Z = linkage(jaccard_matrix, method="average")
+    labels = fcluster(Z, k, criterion="maxclust")
 
     # 将聚类结果转换为社区列表
     communities = {}
