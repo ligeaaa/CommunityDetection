@@ -42,7 +42,7 @@ spectral_clustering_algorithm = SpectralCluster()
 # accuracy, nmi, mod, runtime = GCN_train_and_evaluate(raw_data, truth_table, device)
 # communities = GCN_train_unsupervised(raw_data, device, epochs=1000, learning_rate=0.01, margin=1.0)
 
-results = algorithmDealer.process([louvain_algorithm], G)
+results = algorithmDealer.run([louvain_algorithm], G)
 # results = algorithmDealer.process([sbm_algorithm], G, num_clusters=num_clusters)
 # results = algorithmDealer.process([spectral_clustering_algorithm], G, num_clusters=num_clusters)
 communities = results[0].communities

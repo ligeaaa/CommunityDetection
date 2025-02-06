@@ -33,8 +33,30 @@ class Louvain(Algorithm):
 
 if __name__ == "__main__":
     # 示例输入：边的列表
-    edge_list = [[1, 2], [2, 3], [3, 4], [4, 5], [5, 1], [1, 3], [2, 4], [4, 6], [6, 7]]
-    truth_table = [[7, 0], [6, 0], [4, 1], [5, 1], [3, 1], [2, 1], [1, 1]]
+    edge_list = [
+        [1, 2],
+        [1, 3],
+        [1, 4],
+        [1, 5],
+        [2, 3],
+        [2, 4],
+        [2, 5],
+        [3, 4],
+        [3, 5],
+        [4, 5],
+        [5, 6],
+        [6, 7],
+        [6, 8],
+        [6, 9],
+        [6, 10],
+        [7, 8],
+        [7, 9],
+        [7, 10],
+        [8, 9],
+        [8, 10],
+        [9, 10],
+    ]
+    truth_table = [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]
 
     # 调用 Louvain 算法并返回图和社区结果
     G = nx.Graph()
@@ -43,7 +65,7 @@ if __name__ == "__main__":
     louvain_algorithm = Louvain()
 
     # 可视化结果
-    results = algorithmDealer.process([louvain_algorithm], G)
+    results = algorithmDealer.run([louvain_algorithm], G)
     communities = results[0].communities
 
     pos = nx.spring_layout(G)
