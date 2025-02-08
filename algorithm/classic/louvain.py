@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # coding=utf-8
-import community as community_louvain
+
 import networkx as nx
 from networkx import Graph
 
 from algorithm.algorithm_dealer import Algorithm, AlgorithmDealer
+from algorithm.common.constant.test_data import test_raw_data, test_truth_table
 from algorithm.common.util.drawer import draw_communities
 
 
@@ -12,64 +13,169 @@ class Louvain(Algorithm):
     def __init__(self):
         super().__init__()
         self.algorithm_name = "Louvain"
+        self.graph_snapshots = []  # 存储每个阶段的G
+        self.original_graph = None  # 初始图
 
-    def process(self, G: Graph, **kwargs):
-        # 使用Louvain算法进行社区划分
-        partition = community_louvain.best_partition(G)
+    def process(self, G: Graph, **kwargs) -> list:
+        """
+        First, we assign a different community to each node of the network.
 
-        # 将节点根据其社区编号进行分组
+        Then, for each node i we consider the neighbours j of i, and we evaluate the gain of modularity
+        that would take place by removing i from its community and by placing it in the community of j.
+
+        This process is applied repeatedly and sequentially for all nodes until no further improvement
+        can be achieved and the first phase is then complete.
+
+        The second phase of the algorithm consists in building a new network whose nodes are now the
+        communities found during the first phase. To do so, the weights of the links between the new
+        nodes are given by the sum of the weight of the links between nodes in the corresponding two communities
+
+        Args:
+            G: NetworkX Graph
+
+        Returns:
+            best_communities: the list shows the communities
+
+        References:
+            [1] Blondel, V.D. et al. (2008) ‘008_Fast unfolding of communities in large networks’,
+            Journal of Statistical Mechanics: Theory and Experiment, 2008(10), p. P10008.
+            Available at: https://doi.org/10.1088/1742-5468/2008/10/P10008.
+
+        """
+        self.original_graph = G.copy()
+        self.G = self.init_G(G)
+        self.graph_snapshots.append(self.G.copy())  # 记录初始图
+        iter_time = 1
+        while True:
+            iter_time += 1
+            mod_inc = self.first_phase()
+            if mod_inc:
+                self.second_phase()
+                self.graph_snapshots.append(self.G.copy())  # 记录每个阶段的G
+            else:
+                break
+        return self.get_final_communities()
+
+    def first_phase(self):
+        mod_inc = False
+        visit_sequence = list(self.G.nodes())
+        while True:
+            can_stop = True
+            for node in visit_sequence:
+                community_id = self.G.nodes[node].get("community_id")
+                best_community = community_id
+                max_modularity_gain = 0
+                for neighbor in self.G.neighbors(node):
+                    neighbor_community = self.G.nodes[neighbor].get("community_id")
+                    if neighbor_community != community_id:
+                        gain = self.calculate_modularity_gain(node, neighbor_community)
+                        if gain > max_modularity_gain:
+                            max_modularity_gain = gain
+                            best_community = neighbor_community
+                if best_community != community_id:
+                    self.G.nodes[node]["community_id"] = best_community
+                    mod_inc = True
+                    can_stop = False
+            if can_stop:
+                break
+        return mod_inc
+
+    def calculate_modularity_gain(self, node, target_community):
+        """
+        计算将节点移动到目标社区后的模块度增益。
+
+        Args:
+            node: 要移动的节点
+            target_community: 目标社区 ID
+
+        Returns:
+            模块度增益值
+        """
+        current_community = self.G.nodes[node].get("community_id")
+        original_modularity = nx.algorithms.community.modularity(
+            self.G, self.get_communities()
+        )
+        self.G.nodes[node]["community_id"] = target_community
+        new_modularity = nx.algorithms.community.modularity(
+            self.G, self.get_communities()
+        )
+        self.G.nodes[node]["community_id"] = current_community
+        return new_modularity - original_modularity
+
+    def second_phase(self):
+        new_graph = nx.Graph()
+        community_mapping = {}
+        node_to_community = {}
+        for node in self.G.nodes():
+            community_id = self.G.nodes[node]["community_id"]
+            if community_id not in community_mapping:
+                community_mapping[community_id] = []
+            community_mapping[community_id].append(node)
+            node_to_community[node] = community_id
+        for community_id, nodes in community_mapping.items():
+            new_graph.add_node(community_id, merged_nodes=nodes)
+        for u, v in self.G.edges():
+            cu = node_to_community[u]
+            cv = node_to_community[v]
+            if cu != cv:
+                weight = (
+                    new_graph[cu][cv]["weight"] + 1 if new_graph.has_edge(cu, cv) else 1
+                )
+                new_graph.add_edge(cu, cv, weight=weight)
+        self.G = self.init_G(new_graph)
+
+    def init_G(self, G: Graph):
+        for node in G.nodes():
+            G.nodes[node]["community_id"] = node
+        return G
+
+    def get_communities(self):
         communities = {}
-        for node, community in partition.items():
-            if community not in communities:
-                communities[community] = []
-            communities[community].append(node)
+        for node in self.G.nodes():
+            community_id = self.G.nodes[node]["community_id"]
+            if community_id not in communities:
+                communities[community_id] = []
+            communities[community_id].append(node)
+        return [sorted(nodes) for nodes in communities.values()]
 
-        best_communities = [
-            sorted(nodes) for nodes in communities.values()
-        ]  # 按节点ID排序
+    def get_final_communities(self):
+        final_communities = {}
+        for snapshot in reversed(self.graph_snapshots):
+            if snapshot.number_of_nodes() == 1:
+                continue
+            for node in snapshot.nodes():
+                if "merged_nodes" in snapshot.nodes[node]:
+                    for original_node in snapshot.nodes[node]["merged_nodes"]:
+                        if original_node not in final_communities:
+                            final_communities[original_node] = node
+        grouped_communities = {}
 
-        return best_communities
+        for node in final_communities:
+            while final_communities[node] != node:
+                if (
+                    final_communities[node]
+                    != final_communities[final_communities[node]]
+                ):
+                    final_communities[node] = final_communities[final_communities[node]]
+                else:
+                    break
+
+        for node, community in final_communities.items():
+            if community not in grouped_communities:
+                grouped_communities[community] = []
+            grouped_communities[community].append(node)
+        return [sorted(nodes) for nodes in grouped_communities.values()]
 
 
 if __name__ == "__main__":
-    # 示例输入：边的列表
-    edge_list = [
-        [1, 2],
-        [1, 3],
-        [1, 4],
-        [1, 5],
-        [2, 3],
-        [2, 4],
-        [2, 5],
-        [3, 4],
-        [3, 5],
-        [4, 5],
-        [5, 6],
-        [6, 7],
-        [6, 8],
-        [6, 9],
-        [6, 10],
-        [7, 8],
-        [7, 9],
-        [7, 10],
-        [8, 9],
-        [8, 10],
-        [9, 10],
-    ]
-    truth_table = [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]
-
-    # 调用 Louvain 算法并返回图和社区结果
+    edge_list = test_raw_data
+    truth_table = test_truth_table
     G = nx.Graph()
     G.add_edges_from(edge_list)
     algorithmDealer = AlgorithmDealer()
     louvain_algorithm = Louvain()
-
-    # 可视化结果
     results = algorithmDealer.run([louvain_algorithm], G)
     communities = results[0].communities
-
     pos = nx.spring_layout(G)
     draw_communities(G, pos)
-
-    # 返回结果，包括运行时间，正确率，可视化网络等
     draw_communities(G, pos, communities)

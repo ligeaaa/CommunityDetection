@@ -6,35 +6,14 @@ import networkx as nx
 
 from algorithm.algorithm_dealer import AlgorithmDealer, Algorithm
 from algorithm.classic.SBM import SBM
+from algorithm.common.constant.test_data import test_raw_data, test_truth_table
 
 
 class TestLouvain(unittest.TestCase):
     def testEasyGraph(self):
         # 示例输入：边的列表
-        edge_list = [
-            [1, 2],
-            [1, 3],
-            [1, 4],
-            [1, 5],
-            [2, 3],
-            [2, 4],
-            [2, 5],
-            [3, 4],
-            [3, 5],
-            [4, 5],
-            [5, 6],
-            [6, 7],
-            [6, 8],
-            [6, 9],
-            [6, 10],
-            [7, 8],
-            [7, 9],
-            [7, 10],
-            [8, 9],
-            [8, 10],
-            [9, 10],
-        ]
-        truth_table = [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]
+        edge_list = test_raw_data
+        truth_table = test_truth_table
 
         G = nx.Graph()
         G.add_edges_from(edge_list)

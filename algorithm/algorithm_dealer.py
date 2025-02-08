@@ -8,6 +8,7 @@ from networkx import Graph
 class Algorithm:
     def __init__(self):
         self.algorithm_name = ...
+        self.G = ...
 
     def run(self, G: Graph, **kwargs) -> list:
         raw_results = self.process(G, **kwargs)
