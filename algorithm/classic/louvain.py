@@ -31,10 +31,18 @@ class Louvain(Algorithm):
         nodes are given by the sum of the weight of the links between nodes in the corresponding two communities
 
         Args:
-            G: NetworkX Graph
+            G (networkx.Graph): An undirected, weighted graph where nodes represent data points
+                                and edge weights represent pairwise similar
 
         Returns:
-            best_communities: the list shows the communities
+            list: A list of communities, where each community is a list of node IDs.
+                  Example output:
+                  ```
+                  [[0, 1, 2, 3, 4],  # Community 0
+                   [5, 6, 7, 8, 9]]  # Community 1
+                  ```
+                  This means nodes 0,1,2,3,4 belong to community 0,
+                  and nodes 5,6,7,8,9 belong to community 1.
 
         References:
             [1] Blondel, V.D. et al. (2008) ‘008_Fast unfolding of communities in large networks’,
