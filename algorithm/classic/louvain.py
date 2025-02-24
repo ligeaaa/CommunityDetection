@@ -45,7 +45,7 @@ class Louvain(Algorithm):
                   and nodes 5,6,7,8,9 belong to community 1.
 
         References:
-            [1] Blondel, V.D. et al. (2008) ‘008_Fast unfolding of communities in large networks’,
+            [1] Blondel, V.D. et al. (2008) ‘Fast unfolding of communities in large networks’,
             Journal of Statistical Mechanics: Theory and Experiment, 2008(10), p. P10008.
             Available at: https://doi.org/10.1088/1742-5468/2008/10/P10008.
 
@@ -184,6 +184,6 @@ if __name__ == "__main__":
     louvain_algorithm = Louvain()
     results = algorithmDealer.run([louvain_algorithm], G)
     communities = results[0].communities
-    pos = nx.spring_layout(G)
+    pos = nx.spring_layout(G, seed=42)
     draw_communities(G, pos)
     draw_communities(G, pos, communities)

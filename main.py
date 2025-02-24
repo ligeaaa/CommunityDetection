@@ -5,6 +5,7 @@ import networkx as nx
 import torch
 
 from algorithm.algorithm_dealer import AlgorithmDealer
+from algorithm.classic.GN import GN
 from algorithm.classic.louvain import Louvain
 from algorithm.classic.SBM import SBM
 from algorithm.classic.spectral_clustering import SpectralCluster
@@ -23,9 +24,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # 读取数据集和truthtable（如有）
 # a = Dataset(ZKClubDataset())
-# a = Dataset(PolbooksDataset())
+a = Dataset(PolbooksDataset())
 # a = Dataset(AmericanCollegeFootball())
-a = Dataset(EmailEuCoreDataset())
+# a = Dataset(EmailEuCoreDataset())
 # a = Dataset(CoraDataset())
 # a = Dataset(AmazonDataset())
 
@@ -39,24 +40,19 @@ algorithmDealer = AlgorithmDealer()
 louvain_algorithm = Louvain()
 sbm_algorithm = SBM()
 spectral_clustering_algorithm = SpectralCluster()
+GN_algorithm = GN()
 # accuracy, nmi, mod, runtime = GCN_train_and_evaluate(raw_data, truth_table, device)
 # communities = GCN_train_unsupervised(raw_data, device, epochs=1000, learning_rate=0.01, margin=1.0)
 
-results = algorithmDealer.run([louvain_algorithm], G)
-# results = algorithmDealer.process([sbm_algorithm], G, num_clusters=num_clusters)
-# results = algorithmDealer.process([spectral_clustering_algorithm], G, num_clusters=num_clusters)
+# results = algorithmDealer.run([louvain_algorithm], G)
+# results = algorithmDealer.run([sbm_algorithm], G, num_clusters=num_clusters)
+results = algorithmDealer.run([GN_algorithm], G)
+# results = algorithmDealer.run([spectral_clustering_algorithm], G, num_clusters=num_clusters)
 communities = results[0].communities
 
 
-# print("\n==== Final Results (Excluding First Run) ====")
-# print(f"Average Accuracy: {accuracy:.16f}")
-# print(f"Average NMI: {nmi:.16f}")
-# print(f"Average Modularity (last run): {mod:.16f}")
-# print(f"Average Runtime: {runtime:.4f} seconds")
-# pass
-
 # 原始图
-pos = nx.spring_layout(G)
+pos = nx.spring_layout(G, seed=42)
 draw_communities(G, pos)
 
 # 返回结果，包括运行时间，正确率，可视化网络等

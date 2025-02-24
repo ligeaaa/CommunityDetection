@@ -126,6 +126,6 @@ if __name__ == "__main__":
     SC_algorithm = SpectralCluster()
     results = algorithmDealer.run([SC_algorithm], G, num_clusters=2)
     communities = results[0].communities
-    pos = nx.spring_layout(G)
+    pos = nx.spring_layout(G, seed=42)
     draw_communities(G, pos)
     draw_communities(G, pos, communities)
