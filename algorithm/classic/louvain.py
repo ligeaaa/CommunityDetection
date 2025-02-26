@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
+import random
 
 import networkx as nx
 from networkx import Graph
@@ -16,7 +17,7 @@ class Louvain(Algorithm):
         self.graph_snapshots = []  # 存储每个阶段的G
         self.original_graph = None  # 初始图
 
-    def process(self, G: Graph, **kwargs) -> list:
+    def process(self, G: Graph, seed=42, **kwargs) -> list:
         """
         First, we assign a different community to each node of the network.
 
@@ -33,6 +34,7 @@ class Louvain(Algorithm):
         Args:
             G (networkx.Graph): An undirected, weighted graph where nodes represent data points
                                 and edge weights represent pairwise similar
+            seed: random seed, default 42
 
         Returns:
             list: A list of communities, where each community is a list of node IDs.
@@ -50,13 +52,14 @@ class Louvain(Algorithm):
             Available at: https://doi.org/10.1088/1742-5468/2008/10/P10008.
 
         """
+
         self.original_graph = G.copy()
         self.G = self.init_G(G)
         self.graph_snapshots.append(self.G.copy())  # 记录初始图
         iter_time = 1
         while True:
             iter_time += 1
-            mod_inc = self.first_phase()
+            mod_inc = self.first_phase(seed)
             if mod_inc:
                 self.second_phase()
                 self.graph_snapshots.append(self.G.copy())  # 记录每个阶段的G
@@ -64,9 +67,12 @@ class Louvain(Algorithm):
                 break
         return self.get_final_communities()
 
-    def first_phase(self):
+    def first_phase(self, seed):
         mod_inc = False
+        random.seed(seed)
         visit_sequence = list(self.G.nodes())
+        # 随机点的顺序
+        random.shuffle(visit_sequence)
         while True:
             can_stop = True
             for node in visit_sequence:

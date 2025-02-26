@@ -106,7 +106,9 @@ class SpectralCluster(Algorithm):
             U = U / np.linalg.norm(U, axis=1, keepdims=True)
 
         # Step 6: Apply k-means clustering on the rows of U
-        kmeans = KMeans(n_clusters=num_clusters, n_init=10, random_state=42)
+        kmeans = KMeans(
+            n_clusters=num_clusters, n_init=10, random_state=self.random_seed
+        )
         labels = kmeans.fit_predict(U)
 
         # Step 7: Assign nodes to clusters

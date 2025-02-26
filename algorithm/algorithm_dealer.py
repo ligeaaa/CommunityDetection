@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 # coding=utf-8
+import random
 from typing import List
 
 from networkx import Graph
 
+from algorithm.common.constant.constant_number import random_seed
+
 
 class Algorithm:
     def __init__(self):
+        self.random_seed = random_seed
         self.algorithm_name = ...
         self.G = ...
+        random.seed(self.random_seed)
 
     def run(self, G: Graph, **kwargs) -> list:
         raw_results = self.process(G, **kwargs)
