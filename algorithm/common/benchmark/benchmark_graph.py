@@ -43,7 +43,12 @@ def generate_power_law_degree_sequence(N, avg_degree, min_degree, exponent, seed
 
 
 def generate_power_law_community_sequence(
-    G: nx.Graph, number_of_communities, min_community_size, exponent, seed=42
+    number_of_point,
+    degree_sequence,
+    exponent,
+    min_community_size,
+    max_community_size=None,
+    seed=42,
 ):
     """
     生成符合幂律分布的社区大小序列，确保社区大小总和等于点的数量，并满足以下条件：
@@ -52,7 +57,6 @@ def generate_power_law_community_sequence(
 
     参数:
         G (nx.Graph): 目标图
-        number_of_communities (int): 期望的社区数量
         min_community_size (int): 社区的最小大小
         exponent (float): 幂律指数 y (通常 y > 2)
         seed (int): 随机种子，确保可复现
@@ -62,49 +66,56 @@ def generate_power_law_community_sequence(
     """
     if exponent <= 1:
         raise ValueError("幂律指数 exponent 必须大于 1，否则期望值会发散。")
+    if max_community_size is None:
+        max_community_size = number_of_point
 
     np.random.seed(seed)
-    N = G.number_of_nodes()  # 获取总节点数
-    min_degree = min(dict(G.degree()).values())  # 最小度数
-    max_degree = max(dict(G.degree()).values())  # 最大度数
+    random.seed(seed)
+    min_degree = min(degree_sequence)  # 最小度数
+    min_community_size = max(min_community_size, min_degree + 1)
+    # 生成符合幂律分布的社区大小
+    powerlaw_sequence = (
+        np.random.pareto(exponent - 1, number_of_point) + 1
+    ) * min_community_size
+    powerlaw_sequence = np.round(powerlaw_sequence)  # 取整
+    powerlaw_sequence = powerlaw_sequence[
+        powerlaw_sequence <= max_community_size
+    ].astype(int)
 
-    # 确保社区数量不超过节点数
-    number_of_communities = min(number_of_communities, N)
+    flag = False
+    while not flag:
+        # 初始化社区size
+        community_sizes = []
+        total_community_size = 0
+        # 生成初始的社区size序列
+        while total_community_size < number_of_point:
+            a = random.choice(powerlaw_sequence)
+            if total_community_size + a > number_of_point:
+                break
 
-    while True:
-        # 生成符合幂律分布的社区大小
-        raw_sizes = (
-            np.random.pareto(exponent - 1, number_of_communities) + 1
-        ) * min_community_size
-        community_sizes = np.round(raw_sizes).astype(int)  # 取整
+            community_sizes.append(a)
+            total_community_size += a
 
-        # 归一化，使得社区大小总和等于 N
-        community_sizes = (community_sizes / np.sum(community_sizes)) * N
-        community_sizes = np.round(community_sizes).astype(int)
+        # 调整最后一个社区大小，确保总和等于 `number_of_point`
+        if total_community_size < number_of_point:
+            remaining_size = number_of_point - total_community_size
+            if remaining_size >= min_community_size:
+                community_sizes.append(remaining_size)
+                flag = True
 
-        # 确保所有社区大小至少大于 min_community_size
-        community_sizes = np.maximum(community_sizes, min_community_size + 1)
-
-        # 调整总和以精确匹配 N（避免由于取整导致误差）
-        diff = N - np.sum(community_sizes)
-        while diff != 0:
-            idx = np.random.randint(0, len(community_sizes))
-            community_sizes[idx] += np.sign(diff)
-            diff = N - np.sum(community_sizes)
-
-        # 确保最小社区大于最小度数，最大社区大于最大度数
-        if min(community_sizes) > min_degree and max(community_sizes) > max_degree:
-            break
-
-    return community_sizes.tolist()
+    return community_sizes
 
 
-def assign_nodes_to_communities(G, communities_number_sequence, seed=42):
+def assign_nodes_to_communities(
+    N, mixing_parameter, degree_sequence, communities_number_sequence, seed=42
+):
     """
-    严格按照 communities_number_sequence 进行节点的社区分配。
+    严格按照 communities_number_sequence 进行节点的社区分配，确保社区不会超出预期大小。
 
     参数:
-        G (nx.Graph): 生成的网络
+        N (int): 图中的节点总数
+        mixing_parameter (float): 混合参数
+        degree_sequence (list): 每个节点的度数序列
         communities_number_sequence (list): 预期的社区大小序列
         seed (int): 随机种子，保证可复现性
 
@@ -112,68 +123,102 @@ def assign_nodes_to_communities(G, communities_number_sequence, seed=42):
         dict: 映射节点到其社区的字典
     """
     random.seed(seed)
-    nodes = list(G.nodes())
 
-    # 1. 确保节点随机化
+    # 打乱节点顺序
+    nodes = list(range(N))
     random.shuffle(nodes)
 
-    # 2. 社区大小排序(保证小社区先填充)
-    sorted_communities = sorted(
-        enumerate(communities_number_sequence), key=lambda x: x[1]
-    )
+    # 记录每个社区当前的分配数量
+    community_counts = {i: 0 for i in range(len(communities_number_sequence))}
 
+    # 存储分配结果
     community_assignments = {}
-    community_list = {i: set() for i, _ in sorted_communities}
 
-    node_index = 0  # 追踪当前节点索引
+    for node in nodes:
+        # TODO 添加一个变量存储可选择的社区，降低复杂度
+        while True:
+            # 选择一个随机社区
+            community_id = random.choice(range(len(communities_number_sequence)))
 
-    # 3. 按照社区大小严格分配
-    for community_id, community_size in sorted_communities:
-        while len(community_list[community_id]) < community_size and node_index < len(
-            nodes
-        ):
-            node = nodes[node_index]
-            community_list[community_id].add(node)
-            community_assignments[node] = community_id
-            node_index += 1
+            # 检查社区是否已满
+            if (
+                community_counts[community_id]
+                < communities_number_sequence[community_id]
+            ):
+                # 确保该社区的大小满足条件
+                if (1 - mixing_parameter) * degree_sequence[
+                    node
+                ] < communities_number_sequence[community_id]:
+                    # 分配节点到该社区
+                    community_assignments[node] = community_id
+                    community_counts[community_id] += 1  # 更新社区成员数
+                    break  # 退出循环，分配完成
 
     return community_assignments
 
 
 def create_graph(
     number_of_point,
-    number_of_communities,
     min_community_size,
     degree_exponent,
     community_size_exponent,
     average_degree,
     min_degree,
     mixing_parameter,
+    whether_simple_graph=True,
     seed=42,
 ):
+    """
+
+    Args:
+        number_of_point:
+        min_community_size:
+        degree_exponent:
+        community_size_exponent:
+        average_degree:
+        min_degree:
+        mixing_parameter:
+        whether_simple_graph:
+        seed:
+
+    Returns:
+
+    References:
+    [1] Lancichinetti, A., Fortunato, S. and Radicchi, F. (2008) ‘Benchmark graphs for testing community detection
+    algorithms’, Physical Review E, 78(4), p. 046110. Available at: https://doi.org/10.1103/PhysRevE.78.046110.
+    [2] https://www.osgeo.cn/networkx/reference/generated/networkx.generators.community.LFR_benchmark_graph.html
+
+    """
     random.seed(seed)
     # 生成degree序列
     degree_sequence = generate_power_law_degree_sequence(
         number_of_point, average_degree, min_degree, degree_exponent, seed=seed
     )
-    # 使用配置模型生成图
-    G = nx.configuration_model(degree_sequence, seed=seed)
 
     # 社区大小序列
     communities_number_sequence = generate_power_law_community_sequence(
-        G, number_of_communities, min_community_size, community_size_exponent, seed=seed
+        number_of_point,
+        degree_sequence,
+        community_size_exponent,
+        min_community_size,
+        seed=seed,
     )
 
     # Assign nodes to communities
     node_communities = assign_nodes_to_communities(
-        G, communities_number_sequence, seed=seed
+        number_of_point,
+        mixing_parameter,
+        degree_sequence,
+        communities_number_sequence,
+        seed=seed,
     )
     # 将字典转换为列表，每个社区是一个节点 ID 列表
     communities = [[] for _ in range(len(communities_number_sequence))]
     for node, community_id in node_communities.items():
         communities[community_id].append(node)
 
-    G = nx.Graph()
+    # 根据mixing_parameter排线
+    G = nx.MultiGraph()
     G.add_nodes_from(range(number_of_point))
     for c in communities:
         for u in c:
@@ -186,25 +231,29 @@ def create_graph(
                     G.add_edge(u, v)
             G.nodes[u]["community"] = c
 
+    if whether_simple_graph:
+        # 去除重边和自连
+        G = nx.Graph(G)
+        G.remove_edges_from(nx.selfloop_edges(G))
+
     return G, communities
 
 
+# TODO 写注释
 if __name__ == "__main__":
     # 参数设定
     number_of_point = 200  # 节点数
-    number_of_communities = 5
     degree_exponent = 3  # 幂律指数
     community_size_exponent = 1.5  # 社区大小幂律指数
     average_degree = 5
     min_degree = 1
-    min_community_size = 20
+    min_community_size = 5
     mixing_parameter = 0.05  # 混合参数
     seed = random_seed
 
     # 生成图
     G, communities = create_graph(
         number_of_point,
-        number_of_communities,
         min_community_size,
         degree_exponent,
         community_size_exponent,
