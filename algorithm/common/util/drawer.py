@@ -54,6 +54,8 @@ def draw_communities(
             [node for node in community if node in subgraph]
             for community in communities
         ]
+
+        # TODO 修改，使其具有更多种颜色
         # 使用 itertools 循环分配颜色
         colors = itertools.cycle(["r", "g", "b", "c", "m", "y", "k"])
 

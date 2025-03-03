@@ -72,6 +72,7 @@ def generate_power_law_community_sequence(
     np.random.seed(seed)
     random.seed(seed)
     min_degree = min(degree_sequence)  # 最小度数
+    max_degree = max(degree_sequence)  # 最大度数
     min_community_size = max(min_community_size, min_degree + 1)
     # 生成符合幂律分布的社区大小
     powerlaw_sequence = (
@@ -101,7 +102,9 @@ def generate_power_law_community_sequence(
             remaining_size = number_of_point - total_community_size
             if remaining_size >= min_community_size:
                 community_sizes.append(remaining_size)
-                flag = True
+                # 检测是否合法
+                if max(community_sizes) > max_degree:
+                    flag = True
 
     return community_sizes
 
@@ -127,13 +130,10 @@ def assign_nodes_to_communities(
     # 打乱节点顺序
     nodes = list(range(N))
     random.shuffle(nodes)
-
     # 记录每个社区当前的分配数量
     community_counts = {i: 0 for i in range(len(communities_number_sequence))}
-
     # 存储分配结果
     community_assignments = {}
-
     for node in nodes:
         # TODO 添加一个变量存储可选择的社区，降低复杂度
         while True:
@@ -248,7 +248,7 @@ if __name__ == "__main__":
     average_degree = 5
     min_degree = 1
     min_community_size = 5
-    mixing_parameter = 0.05  # 混合参数
+    mixing_parameter = 0.1  # 混合参数
     seed = random_seed
 
     # 生成图
