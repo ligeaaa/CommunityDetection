@@ -23,7 +23,7 @@ average_degree = 5
 min_degree = 1
 min_community_size = 15
 mixing_parameter = 0.1  # 混合参数
-seed = random_seed
+
 
 # 生成图
 G, true_communities = create_graph(
@@ -34,9 +34,9 @@ G, true_communities = create_graph(
     average_degree,
     min_degree,
     mixing_parameter,
-    seed,
+    seed=random_seed,
 )
-pos = nx.spring_layout(G, seed=42)
+pos = nx.spring_layout(G, seed=random_seed)
 # 返回结果，包括运行时间，正确率，可视化网络等
 draw_communities(G, pos, true_communities)
 

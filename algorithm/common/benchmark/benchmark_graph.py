@@ -9,7 +9,7 @@ from algorithm.common.constant.constant_number import random_seed
 from algorithm.common.util.drawer import draw_communities
 
 
-def generate_power_law_degree_sequence(N, avg_degree, min_degree, exponent, seed=42):
+def generate_power_law_degree_sequence(N, avg_degree, min_degree, exponent):
     """
     生成一个符合幂律分布的度数序列，满足指定的平均度数。
 
@@ -25,7 +25,6 @@ def generate_power_law_degree_sequence(N, avg_degree, min_degree, exponent, seed
         raise ValueError("幂律指数 exponent 必须大于 1，否则期望值会发散。")
 
     # 生成符合幂律分布的随机度数
-    np.random.seed(seed)
     raw_degrees = (np.random.pareto(exponent - 1, N) + 1) * min_degree
 
     # 归一化以匹配期望的平均度数
@@ -48,7 +47,6 @@ def generate_power_law_community_sequence(
     exponent,
     min_community_size,
     max_community_size=None,
-    seed=42,
 ):
     """
     生成符合幂律分布的社区大小序列，确保社区大小总和等于点的数量，并满足以下条件：
@@ -59,7 +57,6 @@ def generate_power_law_community_sequence(
         G (nx.Graph): 目标图
         min_community_size (int): 社区的最小大小
         exponent (float): 幂律指数 y (通常 y > 2)
-        seed (int): 随机种子，确保可复现
 
     返回:
         community_sizes (list): 生成的社区大小序列
@@ -69,8 +66,6 @@ def generate_power_law_community_sequence(
     if max_community_size is None:
         max_community_size = number_of_point
 
-    np.random.seed(seed)
-    random.seed(seed)
     min_degree = min(degree_sequence)  # 最小度数
     max_degree = max(degree_sequence)  # 最大度数
     min_community_size = max(min_community_size, min_degree + 1)
@@ -110,7 +105,7 @@ def generate_power_law_community_sequence(
 
 
 def assign_nodes_to_communities(
-    N, mixing_parameter, degree_sequence, communities_number_sequence, seed=42
+    N, mixing_parameter, degree_sequence, communities_number_sequence
 ):
     """
     严格按照 communities_number_sequence 进行节点的社区分配，确保社区不会超出预期大小。
@@ -120,13 +115,10 @@ def assign_nodes_to_communities(
         mixing_parameter (float): 混合参数
         degree_sequence (list): 每个节点的度数序列
         communities_number_sequence (list): 预期的社区大小序列
-        seed (int): 随机种子，保证可复现性
 
     返回:
         dict: 映射节点到其社区的字典
     """
-    random.seed(seed)
-
     # 打乱节点顺序
     nodes = list(range(N))
     random.shuffle(nodes)
@@ -166,7 +158,7 @@ def create_graph(
     min_degree,
     mixing_parameter,
     whether_simple_graph=True,
-    seed=42,
+    seed=None,
 ):
     """
 
@@ -189,28 +181,22 @@ def create_graph(
     [2] https://www.osgeo.cn/networkx/reference/generated/networkx.generators.community.LFR_benchmark_graph.html
 
     """
-    random.seed(seed)
+    if seed is not None:
+        random.seed(seed)
+        np.random.seed(seed)
     # 生成degree序列
     degree_sequence = generate_power_law_degree_sequence(
-        number_of_point, average_degree, min_degree, degree_exponent, seed=seed
+        number_of_point, average_degree, min_degree, degree_exponent
     )
 
     # 社区大小序列
     communities_number_sequence = generate_power_law_community_sequence(
-        number_of_point,
-        degree_sequence,
-        community_size_exponent,
-        min_community_size,
-        seed=seed,
+        number_of_point, degree_sequence, community_size_exponent, min_community_size
     )
 
     # Assign nodes to communities
     node_communities = assign_nodes_to_communities(
-        number_of_point,
-        mixing_parameter,
-        degree_sequence,
-        communities_number_sequence,
-        seed=seed,
+        number_of_point, mixing_parameter, degree_sequence, communities_number_sequence
     )
     # 将字典转换为列表，每个社区是一个节点 ID 列表
     communities = [[] for _ in range(len(communities_number_sequence))]
@@ -249,7 +235,6 @@ if __name__ == "__main__":
     min_degree = 1
     min_community_size = 15
     mixing_parameter = 0.1  # 混合参数
-    seed = random_seed
 
     # 生成图
     G, communities = create_graph(
@@ -260,10 +245,10 @@ if __name__ == "__main__":
         average_degree,
         min_degree,
         mixing_parameter,
-        seed,
+        seed=random_seed,
     )
 
-    pos = nx.spring_layout(G, seed=42)
+    pos = nx.spring_layout(G, seed=random_seed)
     draw_communities(G, pos)
 
     # 返回结果，包括运行时间，正确率，可视化网络等
