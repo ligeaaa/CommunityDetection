@@ -23,8 +23,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
 
 # 读取数据集和truthtable（如有）
-# a = Dataset(ZKClubDataset())
-a = Dataset(PolbooksDataset())
+a = Dataset(ZKClubDataset())
+# a = Dataset(PolbooksDataset())
 # a = Dataset(AmericanCollegeFootball())
 # a = Dataset(EmailEuCoreDataset())
 # a = Dataset(CoraDataset())

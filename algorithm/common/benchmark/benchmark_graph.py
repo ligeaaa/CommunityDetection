@@ -242,12 +242,12 @@ def create_graph(
 # TODO 写注释
 if __name__ == "__main__":
     # 参数设定
-    number_of_point = 200  # 节点数
+    number_of_point = 150  # 节点数
     degree_exponent = 3  # 幂律指数
     community_size_exponent = 1.5  # 社区大小幂律指数
     average_degree = 5
     min_degree = 1
-    min_community_size = 5
+    min_community_size = 15
     mixing_parameter = 0.1  # 混合参数
     seed = random_seed
 

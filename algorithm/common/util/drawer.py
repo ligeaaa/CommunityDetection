@@ -15,11 +15,15 @@ import random
 import networkx as nx
 from matplotlib import pyplot as plt
 
-# def get_pos()
-
 
 def draw_communities(
-    G, pos, communities=None, max_nodes=200, draw_networkx_labels=True
+    G,
+    pos,
+    communities=None,
+    max_nodes=200,
+    draw_networkx_labels=True,
+    algorithm_name=None,
+    metrics=None,
 ):
     total_nodes = G.number_of_nodes()
 
@@ -81,6 +85,24 @@ def draw_communities(
     # 绘制节点标签
     if draw_networkx_labels is True:
         nx.draw_networkx_labels(subgraph, pos, font_size=8, font_color="black")
+
+    # 设置标题
+    if algorithm_name:
+        plt.title(f"Community Detection - {algorithm_name}")
+
+    # 在图的右侧显示 metrics 信息，调整位置以防止超出边界
+    if metrics:
+        metrics_text = "\n".join(
+            [f"{key}: {value:.4f}" for key, value in metrics.items()]
+        )
+        plt.gcf().text(
+            0.75,
+            0.2,
+            metrics_text,
+            fontsize=10,
+            verticalalignment="top",
+            bbox=dict(facecolor="white", alpha=0.6),
+        )
 
     # 显示图
     plt.show()

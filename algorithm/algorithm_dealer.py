@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 import random
+import time
 from typing import List
 
 from networkx import Graph
@@ -39,12 +40,13 @@ class Algorithm:
 
 
 class AlgorithmResult:
-    def __init__(self, algorithm_name: str, communities: list):
+    def __init__(self, algorithm_name: str, communities: list, runtime: float):
         self.algorithm_name = algorithm_name
         self.communities = communities
+        self.runtime = runtime
 
     def __repr__(self):
-        return f"AlgorithmResult(name={self.algorithm_name}, communities={self.communities})"
+        return f"AlgorithmResult(name={self.algorithm_name}, communities={self.communities}, runtime={self.runtime:.4f}s)"
 
 
 class AlgorithmDealer:
@@ -53,7 +55,10 @@ class AlgorithmDealer:
 
     def run(self, algorithms: List[Algorithm], G: Graph, **kwargs):
         for algorithm in algorithms:
+            start_time = time.time()
             communities = algorithm.run(G, **kwargs)
-            result = AlgorithmResult(algorithm.algorithm_name, communities)
+            runtime = time.time() - start_time
+            # 存储结果，包括运行时间
+            result = AlgorithmResult(algorithm.algorithm_name, communities, runtime)
             self.results.append(result)
         return self.results
