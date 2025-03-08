@@ -11,7 +11,6 @@ Class Description:
 """
 import itertools
 import random
-
 import networkx as nx
 from matplotlib import pyplot as plt
 
@@ -20,9 +19,9 @@ def draw_communities(
     G,
     pos,
     communities=None,
-    max_nodes=200,
+    max_nodes=500,
     draw_networkx_labels=True,
-    algorithm_name=None,
+    title=None,
     metrics=None,
 ):
     total_nodes = G.number_of_nodes()
@@ -52,6 +51,8 @@ def draw_communities(
         # 如果节点数不超过 max_nodes，则直接使用全部节点
         subgraph = G
 
+    fig, ax = plt.subplots()
+
     if communities:
         # 筛选出子图中的社区节点
         subgraph_communities = [
@@ -59,9 +60,10 @@ def draw_communities(
             for community in communities
         ]
 
-        # TODO 修改，使其具有更多种颜色
-        # 使用 itertools 循环分配颜色
-        colors = itertools.cycle(["r", "g", "b", "c", "m", "y", "k"])
+        # 使用 itertools 循环分配颜色，增加颜色种类
+        colors = itertools.cycle(
+            ["r", "g", "b", "c", "m", "y", "k", "orange", "purple", "brown"]
+        )
 
         # 绘制不同社区的节点
         for community, color in zip(subgraph_communities, colors):
@@ -72,23 +74,24 @@ def draw_communities(
                 node_color=color,
                 node_size=300,
                 alpha=0.7,
+                ax=ax,
             )
     else:
         # 如果没有社区划分，则绘制原始图
         nx.draw_networkx_nodes(
-            subgraph, pos, node_size=300, alpha=0.7, node_color="lightblue"
+            subgraph, pos, node_size=300, alpha=0.7, node_color="lightblue", ax=ax
         )
 
     # 绘制所有边
-    nx.draw_networkx_edges(subgraph, pos, edgelist=subgraph.edges(), alpha=0.2)
+    nx.draw_networkx_edges(subgraph, pos, edgelist=subgraph.edges(), alpha=0.2, ax=ax)
 
     # 绘制节点标签
     if draw_networkx_labels is True:
-        nx.draw_networkx_labels(subgraph, pos, font_size=8, font_color="black")
+        nx.draw_networkx_labels(subgraph, pos, font_size=8, font_color="black", ax=ax)
 
     # 设置标题
-    if algorithm_name:
-        plt.title(f"Community Detection - {algorithm_name}")
+    if title:
+        ax.set_title(f"{title}")
 
     # 在图的右侧显示 metrics 信息，调整位置以防止超出边界
     if metrics:
@@ -96,13 +99,14 @@ def draw_communities(
             [f"{key}: {value:.4f}" for key, value in metrics.items()]
         )
         plt.gcf().text(
-            0.75,
-            0.2,
+            0.6,
+            0.25,
             metrics_text,
             fontsize=10,
             verticalalignment="top",
             bbox=dict(facecolor="white", alpha=0.6),
         )
 
-    # 显示图
     plt.show()
+
+    return fig  # 返回 Matplotlib Figure 对象

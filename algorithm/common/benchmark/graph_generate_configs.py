@@ -1,62 +1,131 @@
-#!/usr/bin/env python
-# coding=utf-8
+import os
+import pickle
 import random
+import itertools
+import time
+
+import networkx as nx
+from matplotlib import pyplot as plt
 
 from algorithm.common.benchmark.benchmark_graph import create_graph
+from algorithm.common.constant.constant_number import random_seed
+from algorithm.common.util.drawer import draw_communities
 
 # 预定义不同类型的图的参数范围
-graph_configs = {
-    "type_A": {
-        "number_of_point": (150, 200),
-        "min_community_size": (10, 20),
-        "degree_exponent": (2.0, 3.0),
-        "community_size_exponent": (1.5, 2.5),
-        "average_degree": (5, 15),
-        "min_degree": (2, 5),
-        "mixing_parameter": (0.1, 0.3),
-    },
-    "type_B": {
-        "number_of_point": (500, 1000),
-        "min_community_size": (30, 50),
-        "degree_exponent": (2.5, 3.5),
-        "community_size_exponent": (2.0, 3.0),
-        "average_degree": (10, 20),
-        "min_degree": (3, 7),
-        "mixing_parameter": (0.2, 0.4),
-    },
-    # 可以继续添加更多类型
-}
+node_sizes = {"level1": (50, 100), "level2": (150, 200), "level3": (250, 300)}
+density_levels = {"level1": (1, 2), "level2": (3, 4), "level3": (5, 6)}
+community_counts = {"level1": (3, 5), "level2": (10, 15), "level3": (20, 25)}
 
 
-# 生成随机参数值
 def random_params(param_range):
+    """根据范围随机生成参数值"""
     if isinstance(param_range[0], int):
         return random.randint(*param_range)
     elif isinstance(param_range[0], float):
         return random.uniform(*param_range)
-    return param_range[0]  # 适用于固定值
+    return param_range[0]
 
 
-# 生成多个图
-def generate_graphs(graph_type, num_graphs, random_seed=None):
-    if graph_type not in graph_configs:
-        raise ValueError(f"Graph type '{graph_type}' not found in configurations.")
+def generate_graphs(
+    node_category,
+    density_category,
+    community_category,
+    num_graphs,
+    title,
+    random_seed=None,
+):
+    """生成指定类别的多个基准测试图"""
+    if (
+        node_category not in node_sizes
+        or density_category not in density_levels
+        or community_category not in community_counts
+    ):
+        raise ValueError("无效的图类别")
 
-    config = graph_configs[graph_type]  # 获取参数范围
+    min_degree = random_params(density_levels[density_category])
+    average_degree = random.randint(int(min_degree * 1.5), int(min_degree * 2))
+
+    config = {
+        "number_of_point": node_sizes[node_category],
+        "average_degree": average_degree,
+        "min_community_size": community_counts[community_category],
+        "degree_exponent": (2.0, 3.5),  # 保持默认范围
+        "community_size_exponent": (1.5, 3.0),
+        "min_degree": min_degree,
+        "mixing_parameter": (0.05, 0.2),
+    }
+
     graphs = []
-
     for _ in range(num_graphs):
-        params = {key: random_params(value) for key, value in config.items()}
-        G, communities = create_graph(**params, seed=random_seed)  # 调用已有函数
-        graphs.append((G, communities, params))  # 存储生成的图和参数信息
+        params = {
+            key: random_params(value) if isinstance(value, tuple) else value
+            for key, value in config.items()
+        }
+        G, communities = create_graph(**params, seed=random_seed)
+        graphs.append((G, communities, params, title))
 
     return graphs
 
 
 if __name__ == "__main__":
-    # 示例：生成 3 个 type_A 类型的图
-    generated_graphs = generate_graphs("type_A", 3, random_seed=42)
+    output_dir = "generated_graphs"
+    # 生成所有27种类型，每种类型生成1个图
+    categories = ["level1", "level2", "level3"]
+    all_graphs = []
+    random.seed(random_seed)
 
-    # 查看生成的图的参数
-    for i, (G, communities, params) in enumerate(generated_graphs):
-        print(f"Graph {i+1}: {params}")
+    for node_cat, density_cat, community_cat in itertools.product(categories, repeat=3):
+        title = (
+            f"point-{node_cat}, density-{density_cat}, community_size-{community_cat}"
+        )
+        print(title)
+        retry_count = 0
+        while retry_count < 10:
+            try:
+                generated_graphs = generate_graphs(
+                    node_cat,
+                    density_cat,
+                    community_cat,
+                    1,
+                    title,
+                    random_seed=random_seed,
+                )
+                all_graphs.extend(generated_graphs)
+                break  # 成功生成则跳出循环
+            except ValueError as e:
+                print(f"错误: {e}, 正在重试 ({retry_count + 1}/10)")
+                retry_count += 1
+        else:
+            print(
+                f"连续10次失败，跳过类型: 点数-{node_cat}, 密度-{density_cat}, 社区size-{community_cat}"
+            )
+
+    # 保存数据与图像
+    for i, (G, communities, params, title) in enumerate(all_graphs):
+        time.sleep(1)
+        print(f"Graph {i + 1}: {params}")
+        pos = nx.spring_layout(G, seed=random_seed)
+        fig = draw_communities(G, pos, communities, title=title, metrics=params)
+
+        # 规范化命名
+        filename_prefix = f"{i}_{title}"
+
+        # 保存图像
+        fig_path = os.path.join(output_dir, f"{filename_prefix}.png")
+        fig.savefig(fig_path)
+        plt.close(fig)
+
+        # 保存数据（参数和社区信息）
+        data_path = os.path.join(output_dir, f"{filename_prefix}.pkl")
+        with open(data_path, "wb") as f:
+            pickle.dump(
+                {
+                    "graph": G,
+                    "communities": communities,
+                    "params": params,
+                    "title": title,
+                },
+                f,
+            )
+
+        print(f"已保存: {fig_path} 和 {data_path}")

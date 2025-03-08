@@ -24,19 +24,24 @@ def generate_power_law_degree_sequence(N, avg_degree, min_degree, exponent):
     if exponent <= 1:
         raise ValueError("幂律指数 exponent 必须大于 1，否则期望值会发散。")
 
-    # 生成符合幂律分布的随机度数
-    raw_degrees = (np.random.pareto(exponent - 1, N) + 1) * min_degree
+    flag = False
+    while not flag:
+        # 生成符合幂律分布的随机度数
+        raw_degrees = (np.random.pareto(exponent - 1, N) + 1) * min_degree
 
-    # 归一化以匹配期望的平均度数
-    raw_degrees *= avg_degree / np.mean(raw_degrees)
+        # 归一化以匹配期望的平均度数
+        raw_degrees *= avg_degree / np.mean(raw_degrees)
 
-    # 取整数，并确保最小度数不小于 1
-    degree_sequence = np.round(raw_degrees).astype(int)
-    degree_sequence = np.maximum(degree_sequence, 1)  # 防止出现度数为 0 的情况
+        # 取整数，并确保最小度数不小于 1
+        degree_sequence = np.round(raw_degrees).astype(int)
+        degree_sequence = np.maximum(degree_sequence, 1)  # 防止出现度数为 0 的情况
 
-    # 确保度数序列的总和为偶数（否则调整最大度数的节点）
-    if np.sum(degree_sequence) % 2 == 1:
-        degree_sequence[np.argmax(degree_sequence)] += 1
+        # 确保度数序列的总和为偶数（否则调整最大度数的节点）
+        if np.sum(degree_sequence) % 2 == 1:
+            degree_sequence[np.argmax(degree_sequence)] += 1
+
+        if max(degree_sequence) < N * 0.6:
+            flag = True
 
     return degree_sequence.tolist()
 
@@ -65,21 +70,24 @@ def generate_power_law_community_sequence(
         raise ValueError("幂律指数 exponent 必须大于 1，否则期望值会发散。")
     if max_community_size is None:
         max_community_size = number_of_point
+    if min_community_size > number_of_point * 0.5:
+        raise ValueError("最小社区size过大")
 
     min_degree = min(degree_sequence)  # 最小度数
     max_degree = max(degree_sequence)  # 最大度数
     min_community_size = max(min_community_size, min_degree + 1)
-    # 生成符合幂律分布的社区大小
-    powerlaw_sequence = (
-        np.random.pareto(exponent - 1, number_of_point) + 1
-    ) * min_community_size
-    powerlaw_sequence = np.round(powerlaw_sequence)  # 取整
-    powerlaw_sequence = powerlaw_sequence[
-        powerlaw_sequence <= max_community_size
-    ].astype(int)
 
     flag = False
     while not flag:
+        # 生成符合幂律分布的社区大小
+        powerlaw_sequence = (
+            np.random.pareto(exponent - 1, number_of_point) + 1
+        ) * min_community_size
+        powerlaw_sequence = np.round(powerlaw_sequence)  # 取整
+        powerlaw_sequence = powerlaw_sequence[
+            powerlaw_sequence <= max_community_size
+        ].astype(int)
+
         # 初始化社区size
         community_sizes = []
         total_community_size = 0
@@ -127,8 +135,11 @@ def assign_nodes_to_communities(
     # 存储分配结果
     community_assignments = {}
     for node in nodes:
+        flag = 0
         # TODO 添加一个变量存储可选择的社区，降低复杂度
         while True:
+            flag += 1
+
             # 选择一个随机社区
             community_id = random.choice(range(len(communities_number_sequence)))
 
@@ -140,7 +151,7 @@ def assign_nodes_to_communities(
                 # 确保该社区的大小满足条件
                 if (1 - mixing_parameter) * degree_sequence[
                     node
-                ] < communities_number_sequence[community_id]:
+                ] < communities_number_sequence[community_id] or flag > 100:
                     # 分配节点到该社区
                     community_assignments[node] = community_id
                     community_counts[community_id] += 1  # 更新社区成员数
@@ -252,8 +263,7 @@ if __name__ == "__main__":
     draw_communities(G, pos)
 
     # 返回结果，包括运行时间，正确率，可视化网络等
-    draw_communities(G, pos, communities)
-
+    fig = draw_communities(G, pos, communities)
     original_modularity = nx.algorithms.community.modularity(G, communities)
     print(original_modularity)
     print(communities)

@@ -67,9 +67,7 @@ for result in results:
     evaluation = CommunityDetectionMetrics(G, communities, truth_table)
     metrics = evaluation.evaluate()
     metrics["runtime"] = result.runtime
-    draw_communities(
-        G, pos, communities, algorithm_name=algorithm_name, metrics=metrics
-    )
+    draw_communities(G, pos, communities, title=algorithm_name, metrics=metrics)
 
     # 打印评估结果
     print("---" + algorithm_name + "---")
