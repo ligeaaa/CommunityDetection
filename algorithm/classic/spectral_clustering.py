@@ -88,7 +88,12 @@ class SpectralCluster(Algorithm):
         elif method == "normalized_sym":
             # Ng, Jordan, and Weiss's Normalized Laplacian: L_sym = D^(-1/2) * L * D^(-1/2)
             L = D - W
-            D_inv_sqrt = np.linalg.inv(np.sqrt(D))  # Compute D^(-1/2)
+            D_diag = np.diag(D)  # 取 D 的对角元素
+            D_inv_sqrt_diag = np.zeros_like(D_diag)
+            D_inv_sqrt_diag[D_diag > 0] = 1.0 / np.sqrt(
+                D_diag[D_diag > 0]
+            )  # 仅对非零度节点取逆
+            D_inv_sqrt = np.diag(D_inv_sqrt_diag)  # 转换回对角矩阵
             L = np.dot(np.dot(D_inv_sqrt, L), D_inv_sqrt)  # L_sym
         else:
             raise ValueError(
