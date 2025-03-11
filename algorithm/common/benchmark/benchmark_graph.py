@@ -40,7 +40,7 @@ def generate_power_law_degree_sequence(N, avg_degree, min_degree, exponent):
         if np.sum(degree_sequence) % 2 == 1:
             degree_sequence[np.argmax(degree_sequence)] += 1
 
-        if max(degree_sequence) < N * 0.6:
+        if max(degree_sequence) < N * 0.5:
             flag = True
 
     return degree_sequence.tolist()
