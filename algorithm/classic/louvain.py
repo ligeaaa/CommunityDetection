@@ -17,7 +17,7 @@ class Louvain(Algorithm):
         self.graph_snapshots = []  # 存储每个阶段的G
         self.original_graph = None  # 初始图
 
-    def process(self, G: Graph, seed=42, **kwargs) -> list:
+    def process(self, G: Graph, num_clusters=None, seed=42, **kwargs) -> list:
         """
         First, we assign a different community to each node of the network.
 
@@ -56,13 +56,20 @@ class Louvain(Algorithm):
         self.original_graph = G.copy()
         self.G = self.init_G(G)
         self.graph_snapshots.append(self.G.copy())  # 记录初始图
-        iter_time = 1
+        iter_time = 0
         while True:
             iter_time += 1
             mod_inc = self.first_phase(seed)
+
             if mod_inc:
                 self.second_phase()
                 self.graph_snapshots.append(self.G.copy())  # 记录每个阶段的G
+                current_communities = self.get_communities()
+                if (
+                    num_clusters is not None
+                    and len(current_communities) <= num_clusters
+                ):
+                    break  # 达到目标社区数量时停止
             else:
                 break
         return self.get_final_communities()
@@ -162,7 +169,6 @@ class Louvain(Algorithm):
                     for original_node in snapshot.nodes[node]["merged_nodes"]:
                         if original_node not in final_communities:
                             final_communities[original_node] = node
-        grouped_communities = {}
 
         for node in final_communities:
             while final_communities[node] != node:
@@ -174,6 +180,7 @@ class Louvain(Algorithm):
                 else:
                     break
 
+        grouped_communities = {}
         for node, community in final_communities.items():
             if community not in grouped_communities:
                 grouped_communities[community] = []
@@ -188,7 +195,7 @@ if __name__ == "__main__":
     G.add_edges_from(edge_list)
     algorithmDealer = AlgorithmDealer()
     louvain_algorithm = Louvain()
-    results = algorithmDealer.run([louvain_algorithm], G)
+    results = algorithmDealer.run([louvain_algorithm], G, num_clusters=2)
     communities = results[0].communities
     pos = nx.spring_layout(G, seed=42)
     draw_communities(G, pos)
