@@ -134,6 +134,77 @@ class CommunityDetectionMetrics:
         modularity_value = nx.algorithms.community.modularity(self.G, self.communities)
         return modularity_value
 
+    def accuracy_per_community(self):
+        """
+        计算每个真实社区的 TP（真正例）、FP（假正例）、TN（真负例）、FN（假负例），
+        适用于**多分类**的社区检测问题。
+
+        Returns:
+            dict:
+                {
+                    "community_stats": {
+                        真实社区: {
+                            "TP": int,  # 真实社区内正确匹配的点数
+                            "FP": int,  # 该社区内被误分类到该社区的点数
+                            "TN": int,  # 其他社区正确分类的点数
+                            "FN": int   # 该社区内被误分类到其他社区的点数
+                        }
+                    }
+                }
+        """
+        label_mapping = self.map_communities()
+        community_stats = {}  # 存储每个真实社区的 TP, FP, TN, FN
+        total_nodes = sum(
+            len(nodes) for nodes in self.truth_table
+        )  # 真实社区的总节点数
+
+        # 初始化每个真实社区的 TP, FP, TN, FN
+        unique_truth_labels = set(self.node_to_truth_label.values())
+        for label in unique_truth_labels:
+            community_stats[label] = {"TP": 0, "FP": 0, "TN": 0, "FN": 0}
+
+        # 遍历 `truth_table`，计算 TP、FN
+        for label, truth_nodes in enumerate(self.truth_table):
+            for node in truth_nodes:
+                predicted_label = None  # 该节点的预测社区标签
+                for i, predicted_community in enumerate(self.communities):
+                    if node in predicted_community:
+                        predicted_label = label_mapping.get(i, -1)
+                        break
+
+                if predicted_label == label:
+                    community_stats[label]["TP"] += 1  # 真实社区的节点被正确分类
+                else:
+                    community_stats[label][
+                        "FN"
+                    ] += 1  # 真实社区的节点被误分类到其他社区
+
+        # 遍历 `communities`，计算 FP（假正例）
+        for i, predicted_community in enumerate(self.communities):
+            mapped_label = label_mapping.get(i, -1)  # 预测社区对应的真实社区
+            if mapped_label == -1:
+                continue  # 该社区未匹配到真实社区，跳过
+
+            for node in predicted_community:
+                if node not in self.node_to_truth_label:
+                    continue  # 该节点不在 `truth_table`，跳过
+
+                true_label = self.node_to_truth_label[node]
+
+                if true_label != mapped_label:
+                    community_stats[mapped_label]["FP"] += 1  # 误分类到该社区的点
+
+        # 计算 TN（真负例）= 总节点数 - (TP + FP + FN)
+        for label in community_stats.keys():
+            TP = community_stats[label]["TP"]
+            FP = community_stats[label]["FP"]
+            FN = community_stats[label]["FN"]
+            TN = total_nodes - (TP + FP + FN)  # 其他社区正确分类的点
+
+            community_stats[label]["TN"] = TN
+
+        return {"community_stats": community_stats}
+
     def evaluate(self):
         """
         根据算法输出结果和真实标签计算所有评估指标，并返回一个字典
@@ -141,5 +212,11 @@ class CommunityDetectionMetrics:
         nmi = self.normalized_mutual_information()
         acc = self.accuracy()
         mod = self.modularity()
+        acc_per_community = self.accuracy_per_community()
 
-        return {"NMI": nmi, "Accuracy": acc, "Modularity": mod}
+        return {
+            "NMI": nmi,
+            "Accuracy": acc,
+            "Modularity": mod,
+            "acc_per_community": acc_per_community,
+        }
