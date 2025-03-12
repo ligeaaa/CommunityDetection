@@ -28,6 +28,8 @@ mixing_parameter = 0.1  # 混合参数
 
 # 参数
 pkl_directory = r"D:\code\FYP\CommunityDetection\algorithm\common\benchmark\generated_graphs"  # pkl文件读取目录
+result_dir = "result/test"  # pkl数据保存目录
+os.makedirs(result_dir, exist_ok=True)  # 确保目录存在
 
 if __name__ == "__main__":
 
@@ -53,13 +55,14 @@ if __name__ == "__main__":
         file_path = os.path.join(pkl_directory, file)
         with open(file_path, "rb") as f:
             data = pickle.load(f)
+            data["title"] = os.path.splitext(file)[0]
             data_list.append(data)
 
     for data in data_list:
         G = data["graph"]
         num_nodes = G.number_of_nodes()
-        if num_nodes > 100:
-            continue
+        # if num_nodes > 100:
+        #     continue
         true_communities = data["communities"]
         params = data["params"]
         title = data["title"]
@@ -68,12 +71,12 @@ if __name__ == "__main__":
         # 返回结果，包括运行时间，正确率，可视化网络等
         draw_communities(G, pos, true_communities)
 
-        # 转化truth_table的格式
-        result = []
-        for community_id, nodes in enumerate(true_communities):
-            for node in reversed(nodes):  # 反向遍历节点
-                result.append([node, community_id])
-        truth_table = result
+        # 转化 truth_table 的格式
+        truth_table = [
+            [node, community_id]
+            for community_id, nodes in enumerate(true_communities)
+            for node in reversed(nodes)
+        ]
 
         # 调用算法
         algorithmDealer = AlgorithmDealer()
@@ -91,13 +94,27 @@ if __name__ == "__main__":
             time.sleep(1)
             communities = result.communities
             algorithm_name = result.algorithm_name
-            # 返回结果，包括运行时间，正确率，可视化网络等
+
+            # 计算评估指标
             evaluation = CommunityDetectionMetrics(G, communities, truth_table)
             metrics = evaluation.evaluate()
             metrics["runtime"] = result.runtime
-            draw_communities(G, pos, communities, title=algorithm_name, metrics=metrics)
 
-            # 打印评估结果
-            print("---" + algorithm_name + "---")
-            for metric, value in metrics.items():
-                print(f"{metric}: {value}")
+            # 构造结果文件路径
+            result_filename = f"{algorithm_name}-{title}.pkl"
+            result_filepath = os.path.join(result_dir, result_filename)
+
+            # 保存数据到 .pkl 文件
+            save_data = {
+                "communities": communities,
+                "algorithm_name": algorithm_name,
+                "metrics": metrics,
+            }
+
+            with open(result_filepath, "wb") as f:
+                pickle.dump(save_data, f)
+
+            print(f"Results saved to {result_filepath}")
+
+            # 可视化结果
+            # draw_communities(G, pos, communities, title=algorithm_name + "-" + title, metrics=metrics)

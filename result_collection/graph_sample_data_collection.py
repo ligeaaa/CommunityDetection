@@ -35,10 +35,9 @@ for data in data_list:
     avg_degree = 2 * num_edges / num_nodes if num_nodes > 0 else 0  # 每个节点的平均度数
     density = nx.density(G)  # 计算图的密度
 
-    # 计算图的直径（仅适用于连通图）
+    # 计算图的直径
     if nx.is_connected(G):
         diameter = nx.diameter(G)
-        # diameter = 0
     else:
         diameter = None  # 记录 None，表示图不连通
 

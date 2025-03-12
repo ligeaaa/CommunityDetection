@@ -53,9 +53,16 @@ communities = results[0].communities
 
 # 原始图
 pos = nx.spring_layout(G, seed=42)
-draw_communities(G, pos)
+# draw_communities(G, pos)
 
 # 返回结果，包括运行时间，正确率，可视化网络等
+true_communities = {}
+for node, label in truth_table:
+    if label not in true_communities:
+        true_communities[label] = []
+    true_communities[label].append(node)
+true_communities = list(true_communities.values())
+draw_communities(G, pos, true_communities)
 draw_communities(G, pos, communities)
 
 evaluation = CommunityDetectionMetrics(G, communities, truth_table)

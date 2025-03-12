@@ -12,10 +12,10 @@ from algorithm.common.constant.constant_number import random_seed
 from algorithm.common.util.drawer import draw_communities
 
 # 预定义不同类型的图的参数范围
-node_sizes = {"level1": (50, 100), "level2": (400, 500), "level3": (2000, 3000)}
+node_sizes = {"level1": (50, 200), "level2": (200, 500), "level3": (500, 1000)}
 density_levels = {"level1": (2, 3), "level2": (4, 5), "level3": (6, 7)}
 # 表明最小社区size占总点数的百分比
-community_counts = {"level1": (0.01, 0.05), "level2": (0.1, 0.2), "level3": (0.4, 0.5)}
+community_counts = {"level1": (0.01, 0.05), "level2": (0.05, 0.1), "level3": (0.1, 0.2)}
 
 
 def random_params(param_range):
@@ -47,7 +47,7 @@ def generate_graphs(
     for _ in range(num_graphs):
 
         min_degree = random_params(density_levels[density_category])
-        average_degree = random.randint(int(min_degree * 1.5), int(min_degree * 2))
+        average_degree = random.uniform(int(min_degree * 1.5), int(min_degree * 2))
 
         config = {
             "number_of_point": node_sizes[node_category],

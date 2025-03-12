@@ -96,8 +96,16 @@ def draw_communities(
     # 在图的右侧显示 metrics 信息，调整位置以防止超出边界
     if metrics:
         metrics_text = "\n".join(
-            [f"{key}: {value:.4f}" for key, value in metrics.items()]
+            [
+                (
+                    f"{key}: {value:.4f}"
+                    if not isinstance(value, dict)
+                    else f"{key}: (dict skipped)"
+                )
+                for key, value in metrics.items()
+            ]
         )
+
         plt.gcf().text(
             0.6,
             0.25,
