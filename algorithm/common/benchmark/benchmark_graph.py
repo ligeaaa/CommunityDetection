@@ -239,13 +239,13 @@ def create_graph(
 # TODO 写注释
 if __name__ == "__main__":
     # 参数设定
-    number_of_point = 150  # 节点数
+    number_of_point = 200  # 节点数
     degree_exponent = 3  # 幂律指数
-    community_size_exponent = 1.5  # 社区大小幂律指数
-    average_degree = 5
+    community_size_exponent = 1.7  # 社区大小幂律指数
+    average_degree = 4
     min_degree = 1
-    min_community_size = 15
-    mixing_parameter = 0.1  # 混合参数
+    min_community_size = 7
+    mixing_parameter = 0.15  # 混合参数
 
     # 生成图
     G, communities = create_graph(

@@ -56,7 +56,7 @@ class AlgorithmDealer:
     def run(self, algorithms: List[Algorithm], G: Graph, **kwargs):
         for algorithm in algorithms:
             start_time = time.time()
-            communities = algorithm.run(G, **kwargs)
+            communities = algorithm.run(G.copy(), **kwargs)
             runtime = time.time() - start_time
             # 存储结果，包括运行时间
             result = AlgorithmResult(algorithm.algorithm_name, communities, runtime)

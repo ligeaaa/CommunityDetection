@@ -17,7 +17,9 @@ class Louvain(Algorithm):
         self.graph_snapshots = []  # 存储每个阶段的G
         self.original_graph = None  # 初始图
 
-    def process(self, G: Graph, num_clusters=None, seed=42, **kwargs) -> list:
+    def process(
+        self, G: Graph, num_clusters=None, seed=42, whether_init=True, **kwargs
+    ) -> list:
         """
         First, we assign a different community to each node of the network.
 
@@ -54,7 +56,10 @@ class Louvain(Algorithm):
         """
 
         self.original_graph = G.copy()
-        self.G = self.init_G(G)
+        if whether_init:
+            self.G = self.init_G(G)
+        else:
+            self.G = G
         self.graph_snapshots.append(self.G.copy())  # 记录初始图
         iter_time = 0
         while True:
