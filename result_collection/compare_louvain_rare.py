@@ -12,7 +12,7 @@ from algorithm.common.util.drawer import draw_communities
 from algorithm.common.util.result_evaluation import CommunityDetectionMetrics
 
 if __name__ == "__main__":
-    # # 参数设定
+    # 参数设定
     # number_of_point = 200  # 节点数
     # degree_exponent = 3  # 幂律指数
     # community_size_exponent = 3  # 社区大小幂律指数
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         for node in reversed(nodes)
     ]
     pos = nx.spring_layout(G, seed=42)
-
+    draw_communities(G, pos, true_communities)
     for result in results:
         time.sleep(1)
         communities = result.communities
