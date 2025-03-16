@@ -8,7 +8,7 @@ from algorithm.common.util.drawer import draw_communities
 
 
 class RareDetection(Algorithm):
-    def __init__(self, N_percent=10, M_percent=30, remove_count=5):
+    def __init__(self, N_percent=20, M_percent=40, remove_count=5):
         super().__init__()
         self.algorithm_name = "RareDetection"
         self.N_percent = N_percent / 100  # 转换为比例
