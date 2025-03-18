@@ -70,7 +70,7 @@ if __name__ == "__main__":
         params = data["params"]
         title = data["title"]
 
-        # if flag and title != "197_point-level3, density-level1, community_size-level2":
+        # if flag and title != "149_point-level2, density-level2, community_size-level3":
         #     continue
         # else:
         #     flag = False
@@ -127,8 +127,8 @@ if __name__ == "__main__":
             print(f"Results saved to {result_filepath}")
 
             # 可视化结果
-            from algorithm.common.util.drawer import draw_communities
+            # from algorithm.common.util.drawer import draw_communities
 
-            draw_communities(
-                G, pos, communities, title=algorithm_name + "-" + title, metrics=metrics
-            )
+            # draw_communities(
+            #     G, pos, communities, title=algorithm_name + "-" + title, metrics=metrics
+            # )

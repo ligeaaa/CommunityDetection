@@ -75,7 +75,7 @@ class Leiden(Algorithm):
 
     def move_nodes_fast(self, G):
         """
-        通过贪心策略移动节点，以优化社区划分。
+        通过模块度增益优化移动节点，以优化社区划分。
         """
         nodes = list(G.nodes())
         random.shuffle(nodes)
@@ -90,22 +90,42 @@ class Leiden(Algorithm):
 
     def best_community(self, G, node):
         """
-        计算节点加入不同社区的收益，并选择最优社区。
+        计算节点加入不同社区的模块度增益，并选择最优社区。
         """
         neighbors = list(G.neighbors(node))
         if not neighbors:
             return G.nodes[node]["community_id"]
 
-        community_scores = defaultdict(float)
+        best_community = G.nodes[node]["community_id"]
+        max_modularity_gain = 0
+
         for neighbor in neighbors:
             neighbor_community = G.nodes[neighbor]["community_id"]
-            community_scores[neighbor_community] += G[node][neighbor].get("weight", 1)
+            if neighbor_community != best_community:
+                gain = self.calculate_modularity_gain(G, node, neighbor_community)
+                if gain > max_modularity_gain:
+                    max_modularity_gain = gain
+                    best_community = neighbor_community
 
-        return max(
-            community_scores,
-            key=community_scores.get,
-            default=G.nodes[node]["community_id"],
+        return best_community
+
+    def calculate_modularity_gain(self, G, node, target_community):
+        """
+        计算将节点移动到目标社区的模块度增益。
+        """
+        m = sum(data.get("weight", 1) for _, _, data in G.edges(data=True))
+        k_i = sum(G[node][neighbor].get("weight", 1) for neighbor in G.neighbors(node))
+        sum_in = sum(
+            G[neighbor][node].get("weight", 1)
+            for neighbor in G.neighbors(node)
+            if G.nodes[neighbor]["community_id"] == target_community
         )
+        sum_tot = sum(
+            G[neighbor][node].get("weight", 1) for neighbor in G.neighbors(node)
+        )
+
+        delta_Q = (sum_in + k_i) / (2 * m) - ((sum_tot + k_i) / (2 * m)) ** 2
+        return delta_Q
 
     def aggregate_graph(self, G):
         """
