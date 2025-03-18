@@ -5,7 +5,9 @@ from collections import defaultdict
 
 from algorithm.algorithm_dealer import AlgorithmDealer, Algorithm
 from algorithm.common.benchmark.benchmark_graph import create_graph
+from algorithm.common.util.CommunityCompare import CommunityComparator
 from algorithm.common.util.drawer import draw_communities
+from algorithm.common.util.result_evaluation import CommunityDetectionMetrics
 
 
 class Leiden(Algorithm):
@@ -34,6 +36,7 @@ class Leiden(Algorithm):
             iteration += 1
 
             self.move_nodes_fast(G)
+            self.detect_and_fix_splits(G)
             self.graph_snapshots.append(G.copy())  # 记录每个阶段的G
 
             if (
@@ -127,6 +130,26 @@ class Leiden(Algorithm):
         delta_Q = (sum_in + k_i) / (2 * m) - ((sum_tot + k_i) / (2 * m)) ** 2
         return delta_Q
 
+    def detect_and_fix_splits(self, G):
+        """
+        检测社区内部是否存在分裂，并重新整理成新的社区。
+        """
+        community_map = nx.get_node_attributes(G, "community_id")
+        refined_communities = {}
+
+        for comm in set(community_map.values()):
+            subgraph_nodes = [node for node, c in community_map.items() if c == comm]
+            subgraph = G.subgraph(subgraph_nodes)
+            connected_components = list(nx.connected_components(subgraph))
+
+            for idx, component in enumerate(connected_components):
+                refined_communities[f"{comm}_{idx}"] = component
+
+        # 更新 G 中的社区编号
+        for new_comm_id, nodes in refined_communities.items():
+            for node in nodes:
+                G.nodes[node]["community_id"] = new_comm_id
+
     def aggregate_graph(self, G):
         """
         构建新的聚合图，每个社区变成一个节点，边权重为社区间边的总和。
@@ -134,6 +157,7 @@ class Leiden(Algorithm):
         new_G = nx.Graph()
         community_map = nx.get_node_attributes(G, "community_id")
 
+        # 构建新的社区图
         for node1, node2, data in G.edges(data=True):
             comm1, comm2 = community_map[node1], community_map[node2]
             if comm1 != comm2:
@@ -142,9 +166,11 @@ class Leiden(Algorithm):
                 else:
                     new_G.add_edge(comm1, comm2, weight=data.get("weight", 1))
 
+        # 添加新的社区节点
         for comm in set(community_map.values()):
             new_G.add_node(comm, community_id=comm)
 
+        # 更新G，确保社区编号正确
         G.clear()
         G.add_edges_from(new_G.edges(data=True))
         nx.set_node_attributes(
@@ -163,11 +189,11 @@ if __name__ == "__main__":
     community_size_exponent = 3  # 社区大小幂律指数
     average_degree = 6
     min_degree = 2
-    min_community_size = 15
+    min_community_size = 10
     mixing_parameter = 0.1  # 混合参数
 
     # 生成图
-    G, truth_table = create_graph(
+    G, true_communities = create_graph(
         number_of_point,
         min_community_size,
         degree_exponent,
@@ -178,11 +204,31 @@ if __name__ == "__main__":
         seed=53,
     )
     pos = nx.spring_layout(G, seed=42)
-    draw_communities(G, pos, truth_table)
+    draw_communities(G, pos, true_communities)
     algorithmDealer = AlgorithmDealer()
     louvain_algorithm = Leiden()
-    results = algorithmDealer.run([louvain_algorithm], G, num_clusters=len(truth_table))
+    results = algorithmDealer.run(
+        [louvain_algorithm], G, num_clusters=len(true_communities)
+    )
     communities = results[0].communities
     pos = nx.spring_layout(G, seed=42)
     # draw_communities(G, pos)
-    draw_communities(G, pos, communities)
+    # draw_communities(G, pos, communities)
+
+    # 计算评估指标
+    # 转化 truth_table 的格式
+    truth_table = [
+        [node, community_id]
+        for community_id, nodes in enumerate(true_communities)
+        for node in reversed(nodes)
+    ]
+    evaluation = CommunityDetectionMetrics(G, communities, truth_table)
+    metrics = evaluation.evaluate()
+    metrics["runtime"] = results[0].runtime
+
+    # 可视化结果
+    from algorithm.common.util.drawer import draw_communities
+
+    draw_communities(G, pos, communities, title="Leiden_Rare", metrics=metrics)
+
+    CommunityComparator(communities, true_communities).run()

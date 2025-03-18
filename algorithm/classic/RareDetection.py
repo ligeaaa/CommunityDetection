@@ -2,7 +2,7 @@ import networkx as nx
 from networkx import Graph
 
 from algorithm.algorithm_dealer import Algorithm, AlgorithmDealer
-from algorithm.classic.louvain import Louvain
+from algorithm.classic.leiden import Leiden
 from algorithm.common.benchmark.benchmark_graph import create_graph
 from algorithm.common.util.drawer import draw_communities
 
@@ -46,11 +46,11 @@ class RareDetection(Algorithm):
             removed_nodes.update(set(G.neighbors(node)))
         G.remove_nodes_from(removed_nodes)
 
-        # 运行 Louvain 算法
+        # 运行 Leiden 算法
         algorithmDealer = AlgorithmDealer()
-        louvain_algorithm = Louvain()
+        leiden_algorithm = Leiden()
         results = algorithmDealer.run(
-            [louvain_algorithm],
+            [leiden_algorithm],
             G,
             seed=seed,
             whether_format_result=False,
@@ -77,15 +77,15 @@ class RareDetection(Algorithm):
                 community_mapping[node] = len(communities) + new_id
                 new_id += 1
 
-        # 在新的图上再次运行 Louvain
+        # 在新的图上再次运行 Leiden
         new_G = original_graph.copy()
         for node in new_G.nodes:
             new_G.nodes[node]["community_id"] = community_mapping[node]
 
         algorithmDealer = AlgorithmDealer()
-        louvain_algorithm = Louvain()
+        leiden_algorithm = Leiden()
         results = algorithmDealer.run(
-            [louvain_algorithm],
+            [leiden_algorithm],
             new_G,
             whether_init=False,
             seed=seed,

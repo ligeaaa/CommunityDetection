@@ -58,11 +58,12 @@ def compute_average_metrics(all_sorted_metrics, max_community_count):
 if __name__ == "__main__":
     data_list = read_data(
         result_dir,
-        algorithm="Louvain",
+        algorithm="Leiden",
+        # algorithm="Louvain",
         # algorithm="RareDetection",
-        point_level="level2",
-        density_level="level1",
-        community_size_level="level2",
+        # point_level="level3",
+        # density_level="level1",
+        # community_size_level="level2",
     )
 
     # 计算精确率和召回率

@@ -6,8 +6,10 @@ import networkx as nx
 
 from algorithm.algorithm_dealer import AlgorithmDealer
 from algorithm.classic.RareDetection import RareDetection
+from algorithm.classic.leiden import Leiden
 from algorithm.classic.louvain import Louvain
 from algorithm.common.benchmark.benchmark_graph import create_graph
+from algorithm.common.util.CommunityCompare import CommunityComparator
 from algorithm.common.util.drawer import draw_communities
 from algorithm.common.util.result_evaluation import CommunityDetectionMetrics
 
@@ -42,8 +44,9 @@ if __name__ == "__main__":
 
     algorithmDealer = AlgorithmDealer()
     rare_algorithm = RareDetection()
+    leiden = Leiden()
     louvain = Louvain()
-    results = algorithmDealer.run([rare_algorithm, louvain], G, num_clusters=6)
+    results = algorithmDealer.run([rare_algorithm, louvain, leiden], G, num_clusters=6)
     truth_table = [
         [node, community_id]
         for community_id, nodes in enumerate(true_communities)
@@ -63,5 +66,7 @@ if __name__ == "__main__":
 
         # 可视化结果
         draw_communities(G, pos, communities, title=algorithm_name, metrics=metrics)
+
+        CommunityComparator(communities, true_communities).run()
 
     print(1)
