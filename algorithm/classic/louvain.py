@@ -166,6 +166,8 @@ class Louvain(Algorithm):
 
     def get_final_communities(self):
         final_communities = {}
+
+        # 追踪每个节点的最终归属社区
         for snapshot in reversed(self.graph_snapshots):
             if snapshot.number_of_nodes() == 1:
                 continue
@@ -175,21 +177,30 @@ class Louvain(Algorithm):
                         if original_node not in final_communities:
                             final_communities[original_node] = node
 
-        for node in final_communities:
-            while final_communities[node] != node:
-                if (
-                    final_communities[node]
-                    != final_communities[final_communities[node]]
-                ):
-                    final_communities[node] = final_communities[final_communities[node]]
-                else:
+        def find_root(node):
+            """使用路径压缩方法查找根社区，避免死循环"""
+            visited = set()
+            while node in final_communities and final_communities[node] != node:
+                if node in visited:
+                    final_communities[node] = node  # 发现环，打破并指向自身
                     break
+                visited.add(node)
+                next_node = final_communities[node]
+                final_communities[node] = final_communities.get(next_node, next_node)
+                node = next_node
+            return node
 
+        # 修正所有节点的社区归属，避免环
+        for node in list(final_communities.keys()):
+            final_communities[node] = find_root(node)
+
+        # 重新整理社区结构
         grouped_communities = {}
         for node, community in final_communities.items():
             if community not in grouped_communities:
                 grouped_communities[community] = []
             grouped_communities[community].append(node)
+
         return [sorted(nodes) for nodes in grouped_communities.values()]
 
 

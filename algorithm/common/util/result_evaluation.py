@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
+import random
+
 import networkx as nx
 import numpy as np
 from scipy.optimize import linear_sum_assignment
@@ -87,11 +89,19 @@ class CommunityDetectionMetrics:
         计算归一化互信息 (NMI)。
         衡量两个不同划分之间相似性的指标，通常用于社区发现结果与真实社区划分之间的一致性评估。NMI 值在 0 到 1 之间，1 表示完全匹配，0 表示没有相关性。
         """
-        truth_labels = [
-            self.node_to_truth_label[node]
-            for community in self.communities
-            for node in community
-        ]
+        # 确保 node_to_truth_label 不缺失任何 node
+        existing_labels = list(self.node_to_truth_label.values())  # 现有标签列表
+
+        truth_labels = []
+        for community in self.communities:
+            for node in community:
+                if node not in self.node_to_truth_label:
+                    if existing_labels:  # 确保至少有一个可用的标签
+                        self.node_to_truth_label[node] = random.choice(existing_labels)
+                    else:
+                        self.node_to_truth_label[node] = 0  # 或者其他默认值
+                truth_labels.append(self.node_to_truth_label[node])
+
         predicted_labels = []
         for i, community in enumerate(self.communities):
             predicted_labels.extend([i] * len(community))

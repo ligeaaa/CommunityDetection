@@ -35,6 +35,7 @@ class RareDetection(Algorithm):
         }
 
         # 选取主流度最低的 `remove_count` 个点作为“非主流点”
+        # TODO 应该不会产生孤立点
         non_mainstream_nodes = sorted(mainstream_scores, key=mainstream_scores.get)[
             : self.remove_count
         ]
@@ -49,7 +50,11 @@ class RareDetection(Algorithm):
         algorithmDealer = AlgorithmDealer()
         louvain_algorithm = Louvain()
         results = algorithmDealer.run(
-            [louvain_algorithm], G, seed=seed, num_clusters=num_clusters
+            [louvain_algorithm],
+            G,
+            seed=seed,
+            whether_format_result=False,
+            num_clusters=num_clusters,
         )
         communities = results[0].communities
         # pos = nx.spring_layout(original_graph, seed=42)

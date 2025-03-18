@@ -16,10 +16,11 @@ class Algorithm:
         self.G = ...
         random.seed(self.random_seed)
 
-    def run(self, G: Graph, **kwargs) -> list:
+    def run(self, G: Graph, whether_format_result=True, **kwargs) -> list:
         raw_results = self.process(G, **kwargs)
-        format_results = self.format_results(raw_results)
-        return format_results
+        if whether_format_result:
+            raw_results = self.format_results(raw_results)
+        return raw_results
 
     def process(self, G: Graph, **kwargs) -> list: ...
 
