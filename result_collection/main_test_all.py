@@ -10,6 +10,7 @@ import torch
 from algorithm.algorithm_dealer import AlgorithmDealer
 from algorithm.classic.GN import GN
 from algorithm.classic.RareDetection import RareDetection
+from algorithm.classic.leiden import Leiden
 from algorithm.classic.louvain import Louvain
 from algorithm.classic.spectral_clustering import SpectralCluster
 from algorithm.common.constant.constant_number import random_seed
@@ -69,10 +70,10 @@ if __name__ == "__main__":
         params = data["params"]
         title = data["title"]
 
-        if flag and title != "89_point-level1, density-level3, community_size-level3":
-            continue
-        else:
-            flag = False
+        # if flag and title != "197_point-level3, density-level1, community_size-level2":
+        #     continue
+        # else:
+        #     flag = False
 
         pos = nx.spring_layout(G, seed=random_seed)
         # 返回结果，包括运行时间，正确率，可视化网络等
@@ -91,9 +92,10 @@ if __name__ == "__main__":
         spectral_clustering_algorithm = SpectralCluster()
         GN_algorithm = GN()
         rare_algorithm = RareDetection()
+        leiden_algorithm = Leiden()
 
         results = algorithmDealer.run(
-            [rare_algorithm],
+            [leiden_algorithm],
             G,
             num_clusters=len(true_communities),
         )
