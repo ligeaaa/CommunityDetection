@@ -3,3 +3,5 @@
 /algorithm/common/benchmark/generated_graphs/
 /result_collection/result/
 /data/temp/
+/result_collection/avg_metrics_comparison_grid.png
+/result_collection/precision_recall_comparison_grid.png

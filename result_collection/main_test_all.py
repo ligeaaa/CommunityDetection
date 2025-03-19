@@ -71,10 +71,10 @@ if __name__ == "__main__":
         params = data["params"]
         title = data["title"]
 
-        # if flag and title != "149_point-level2, density-level2, community_size-level3":
-        #     continue
-        # else:
-        #     flag = False
+        if flag and title != "178_point-level2, density-level3, community_size-level3":
+            continue
+        else:
+            flag = False
 
         pos = nx.spring_layout(G, seed=random_seed)
         # 返回结果，包括运行时间，正确率，可视化网络等

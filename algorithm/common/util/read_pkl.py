@@ -16,7 +16,7 @@ def read_data(
     读取目录下所有的 .pkl 文件，并根据筛选条件进行过滤。
 
     :param result_dir: 存储结果的目录路径
-    :param algorithm: 需要筛选的算法名（如 'Girvan-Newman', 'SpectralCluster', 'Louvain'），默认为 None（不过滤）
+    :param algorithm: 需要筛选的算法名（如 'Girvan-Newman', 'SpectralCluster', 'Louvain', 'Leiden_Rarev0.01'），默认为 None（不过滤）
     :param point_level: 需要筛选的 point-level（如 'level1', 'level2'），默认为 None（不过滤）
     :param density_level: 需要筛选的 density-level（如 'level1', 'level2'），默认为 None（不过滤）
     :param community_size_level: 需要筛选的 community-size-level（如 'level1', 'level2'），默认为 None（不过滤）
@@ -28,7 +28,7 @@ def read_data(
     filtered_files = []
     for file in pkl_files:
         match = re.match(
-            r"([A-Za-z\-]+)-(\d+)_point-(level\d), density-(level\d), community_size-(level\d)\.pkl",
+            r"([\w\-.]+)-(\d+)_point-(level\d), density-(level\d), community_size-(level\d)\.pkl",
             file,
         )
         if match:

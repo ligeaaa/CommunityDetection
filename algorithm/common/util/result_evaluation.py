@@ -5,7 +5,7 @@ import random
 import networkx as nx
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-from sklearn.metrics import accuracy_score, normalized_mutual_info_score
+from sklearn.metrics import normalized_mutual_info_score
 
 
 class CommunityDetectionMetrics:
@@ -116,24 +116,31 @@ class CommunityDetectionMetrics:
 
     def accuracy(self):
         """
-        计算社区划分的准确率 (ACC)。
-        衡量社区划分中节点分类正确的比例。通过比较算法输出的社区标签与真实标签的匹配情况来计算准确率。
+        计算社区划分的 Precision（精确率）、Recall（召回率） 和 Accuracy（准确率）。
+
+        Returns:
+            dict:
+                {
+                    "Accuracy": float,   # 总体准确率
+                    "Precision": float,  # 总体精确率
+                    "Recall": float      # 总体召回率
+                }
         """
-        truth_labels = [
-            self.node_to_truth_label[node]
-            for community in self.communities
-            for node in community
-        ]
         predicted_labels = []
         for i, community in enumerate(self.communities):
             predicted_labels.extend([i] * len(community))
 
-        # 映射社区编号
-        label_mapping = self.map_communities()
-        mapped_labels = self.apply_mapping(label_mapping)
+        # 计算 TP、FP、FN
+        community_stats = self.accuracy_per_community()["community_stats"]
+        total_TP = sum(stats["TP"] for stats in community_stats.values())
+        total_FP = sum(stats["FP"] for stats in community_stats.values())
+        total_FN = sum(stats["FN"] for stats in community_stats.values())
 
-        acc_value = accuracy_score(truth_labels, mapped_labels)
-        return acc_value
+        # 计算 Precision 和 Recall
+        precision = total_TP / (total_TP + total_FP) if (total_TP + total_FP) > 0 else 0
+        recall = total_TP / (total_TP + total_FN) if (total_TP + total_FN) > 0 else 0
+
+        return precision, recall
 
     def modularity(self):
         """
@@ -208,13 +215,14 @@ class CommunityDetectionMetrics:
         根据算法输出结果和真实标签计算所有评估指标，并返回一个字典
         """
         nmi = self.normalized_mutual_information()
-        acc = self.accuracy()
+        precision, recall = self.accuracy()
         mod = self.modularity()
         acc_per_community = self.accuracy_per_community()
 
         return {
             "NMI": nmi,
-            "Accuracy": acc,
+            "Precision": precision,
+            "Recall": recall,
             "Modularity": mod,
             "acc_per_community": acc_per_community,
         }

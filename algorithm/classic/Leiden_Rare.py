@@ -114,10 +114,20 @@ class Leiden_Rare(Algorithm):
 
                 # **更新新社区信息**
                 for comm_id, new_comm in new_community_dict.items():
+                    subgraph = G.subgraph(new_comm)
+
+                    # 检查子图是否连通
+                    # TODO 有可能不连通，所以设计一个更合理的算法逻辑
+                    if nx.is_connected(subgraph):
+                        new_diameter = nx.diameter(subgraph)
+                    else:
+                        # 取最大连通分量的直径
+                        largest_cc = max(nx.connected_components(subgraph), key=len)
+                        new_diameter = nx.diameter(G.subgraph(largest_cc))
+
+                    # 存储社区信息
                     communities_dict[comm_id] = new_comm
-                    community_diameters.append(
-                        (comm_id, nx.diameter(G.subgraph(new_comm)))
-                    )
+                    community_diameters.append((comm_id, new_diameter))
 
         # **最终返回优化后的社区**
         return [sorted(list(nodes)) for nodes in communities_dict.values()]
