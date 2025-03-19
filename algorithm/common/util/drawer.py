@@ -118,3 +118,60 @@ def draw_communities(
     plt.show()
 
     return fig  # 返回 Matplotlib Figure 对象
+
+
+def draw_shortest_paths(G, pos):
+    """计算并绘制不同长度的最短路径"""
+    # 计算所有点对最短路径长度
+    shortest_paths = dict(nx.all_pairs_shortest_path_length(G))
+
+    # 统计路径长度
+    edge_color_map = {}  # 存储边及其颜色
+    length_categories = {}  # 存储不同长度的边集合
+
+    # 遍历所有点对，收集边及其对应的路径长度
+    for node1 in shortest_paths:
+        for node2, length in shortest_paths[node1].items():
+            if node1 != node2 and (node2, node1) not in edge_color_map:
+                if length not in length_categories:
+                    length_categories[length] = []
+                length_categories[length].append((node1, node2))
+
+    # 分配颜色
+    colors = itertools.cycle(
+        ["r", "g", "b", "c", "m", "y", "k", "orange", "purple", "brown"]
+    )
+    length_color_map = {
+        length: next(colors) for length in sorted(length_categories.keys())
+    }
+
+    # 记录每条边的颜色
+    for length, edges in length_categories.items():
+        for edge in edges:
+            edge_color_map[edge] = length_color_map[length]
+
+    # 绘制图
+    plt.figure(figsize=(8, 8))
+
+    # 绘制节点
+    nx.draw_networkx_nodes(G, pos, node_color="lightblue", node_size=300, alpha=0.7)
+
+    # 绘制边（按最短路径长度分颜色）
+    for length, edges in length_categories.items():
+        nx.draw_networkx_edges(
+            G,
+            pos,
+            edgelist=edges,
+            edge_color=length_color_map[length],
+            alpha=0.6,
+            width=2,
+            label=f"Length {length}",
+        )
+
+    # 绘制标签
+    nx.draw_networkx_labels(G, pos, font_size=8, font_color="black")
+
+    # 图例
+    plt.legend()
+    plt.title("Shortest Paths with Different Lengths")
+    plt.show()

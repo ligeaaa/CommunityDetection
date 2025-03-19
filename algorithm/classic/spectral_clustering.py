@@ -6,8 +6,10 @@ from scipy.sparse.linalg import eigsh
 from sklearn.cluster import KMeans
 
 from algorithm.algorithm_dealer import Algorithm, AlgorithmDealer
-from algorithm.common.constant.test_data import test_raw_data, test_truth_table
+from algorithm.common.benchmark.benchmark_graph import create_graph
+from algorithm.common.util.CommunityCompare import CommunityComparator
 from algorithm.common.util.drawer import draw_communities
+from algorithm.common.util.result_evaluation import CommunityDetectionMetrics
 
 
 class SpectralCluster(Algorithm):
@@ -125,14 +127,49 @@ class SpectralCluster(Algorithm):
 
 
 if __name__ == "__main__":
-    edge_list = test_raw_data
-    truth_table = test_truth_table
-    G = nx.Graph()
-    G.add_edges_from(edge_list)
+    number_of_point = 200  # 节点数
+    degree_exponent = 3  # 幂律指数
+    community_size_exponent = 3  # 社区大小幂律指数
+    average_degree = 6
+    min_degree = 2
+    min_community_size = 10
+    mixing_parameter = 0.1  # 混合参数
+
+    # 生成图
+    G, true_communities = create_graph(
+        number_of_point,
+        min_community_size,
+        degree_exponent,
+        community_size_exponent,
+        average_degree,
+        min_degree,
+        mixing_parameter,
+        seed=53,
+    )
+    pos = nx.spring_layout(G, seed=42)
+    draw_communities(G, pos, true_communities)
     algorithmDealer = AlgorithmDealer()
-    SC_algorithm = SpectralCluster()
-    results = algorithmDealer.run([SC_algorithm], G, num_clusters=2)
+    sc_algorithm = SpectralCluster()
+    results = algorithmDealer.run([sc_algorithm], G, num_clusters=len(true_communities))
     communities = results[0].communities
     pos = nx.spring_layout(G, seed=42)
-    draw_communities(G, pos)
-    draw_communities(G, pos, communities)
+    # draw_communities(G, pos)
+    # draw_communities(G, pos, communities)
+
+    # 计算评估指标
+    # 转化 truth_table 的格式
+    truth_table = [
+        [node, community_id]
+        for community_id, nodes in enumerate(true_communities)
+        for node in reversed(nodes)
+    ]
+    evaluation = CommunityDetectionMetrics(G, communities, truth_table)
+    metrics = evaluation.evaluate()
+    metrics["runtime"] = results[0].runtime
+
+    # 可视化结果
+    from algorithm.common.util.drawer import draw_communities
+
+    draw_communities(G, pos, communities, title="Leiden", metrics=metrics)
+
+    CommunityComparator(communities, true_communities).run()

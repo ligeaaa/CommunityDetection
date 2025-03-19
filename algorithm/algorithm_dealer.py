@@ -14,6 +14,7 @@ class Algorithm:
         self.random_seed = random_seed
         self.algorithm_name = ...
         self.G = ...
+        self.version = "v0.01"
         random.seed(self.random_seed)
 
     def run(self, G: Graph, whether_format_result=True, **kwargs) -> list:
@@ -41,10 +42,13 @@ class Algorithm:
 
 
 class AlgorithmResult:
-    def __init__(self, algorithm_name: str, communities: list, runtime: float):
+    def __init__(
+        self, algorithm_name: str, communities: list, runtime: float, version: str
+    ):
         self.algorithm_name = algorithm_name
         self.communities = communities
         self.runtime = runtime
+        self.version = version
 
     def __repr__(self):
         return f"AlgorithmResult(name={self.algorithm_name}, communities={self.communities}, runtime={self.runtime:.4f}s)"
@@ -60,6 +64,8 @@ class AlgorithmDealer:
             communities = algorithm.run(G.copy(), **kwargs)
             runtime = time.time() - start_time
             # 存储结果，包括运行时间
-            result = AlgorithmResult(algorithm.algorithm_name, communities, runtime)
+            result = AlgorithmResult(
+                algorithm.algorithm_name, communities, runtime, algorithm.version
+            )
             self.results.append(result)
         return self.results

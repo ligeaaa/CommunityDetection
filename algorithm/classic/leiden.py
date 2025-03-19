@@ -6,6 +6,7 @@ from collections import defaultdict
 from algorithm.algorithm_dealer import AlgorithmDealer, Algorithm
 from algorithm.common.benchmark.benchmark_graph import create_graph
 from algorithm.common.util.CommunityCompare import CommunityComparator
+from algorithm.common.util.data_reader.save_pkl import save_pkl_to_temp
 from algorithm.common.util.drawer import draw_communities
 from algorithm.common.util.result_evaluation import CommunityDetectionMetrics
 
@@ -32,6 +33,7 @@ class Leiden(Algorithm):
             G.nodes[node]["community_id"] = node
 
         iteration = 0
+        prev_communities = None
         while True:
             iteration += 1
 
@@ -39,13 +41,19 @@ class Leiden(Algorithm):
             self.detect_and_fix_splits(G)
             self.graph_snapshots.append(G.copy())  # 记录每个阶段的G
 
+            current_communities = set(
+                nx.get_node_attributes(G, "community_id").values()
+            )
+
+            # 终止条件：
+            # 1. 若 num_clusters 指定，则社区数小于等于 num_clusters 时终止
+            # 2. 若未指定 num_clusters，则当社区不再变化时终止
             if (
-                num_clusters is not None
-                and len(set(nx.get_node_attributes(G, "community_id").values()))
-                <= num_clusters
-            ):
+                num_clusters is not None and len(current_communities) <= num_clusters
+            ) or (num_clusters is None and current_communities == prev_communities):
                 break
 
+            prev_communities = current_communities.copy()
             self.aggregate_graph(G)
 
         return self.get_final_communities()
@@ -75,6 +83,53 @@ class Leiden(Algorithm):
         for node, comm_id in final_communities.items():
             communities[comm_id].add(node)
         return [sorted(list(nodes)) for nodes in communities.values()]
+
+    def detect_and_fix_splits(self, G):
+        """
+        检测社区内部是否存在分裂，并重新整理成新的社区。
+        """
+        community_map = nx.get_node_attributes(G, "community_id")
+        refined_communities = {}
+
+        for comm in set(community_map.values()):
+            subgraph_nodes = [node for node, c in community_map.items() if c == comm]
+            subgraph = G.subgraph(subgraph_nodes)
+            connected_components = list(nx.connected_components(subgraph))
+
+            for idx, component in enumerate(connected_components):
+                refined_communities[f"{comm}_{idx}"] = component
+
+        # 更新 G 中的社区编号
+        for new_comm_id, nodes in refined_communities.items():
+            for node in nodes:
+                G.nodes[node]["community_id"] = new_comm_id
+
+    def aggregate_graph(self, G):
+        """
+        构建新的聚合图，每个社区变成一个节点，边权重为社区间边的总和。
+        """
+        new_G = nx.Graph()
+        community_map = nx.get_node_attributes(G, "community_id")
+
+        # 构建新的社区图
+        for node1, node2, data in G.edges(data=True):
+            comm1, comm2 = community_map[node1], community_map[node2]
+            if comm1 != comm2:
+                if new_G.has_edge(comm1, comm2):
+                    new_G[comm1][comm2]["weight"] += data.get("weight", 1)
+                else:
+                    new_G.add_edge(comm1, comm2, weight=data.get("weight", 1))
+
+        # 添加新的社区节点
+        for comm in set(community_map.values()):
+            new_G.add_node(comm, community_id=comm)
+
+        # 更新G，确保社区编号正确
+        G.clear()
+        G.add_edges_from(new_G.edges(data=True))
+        nx.set_node_attributes(
+            G, {node: node for node in new_G.nodes()}, "community_id"
+        )
 
     def move_nodes_fast(self, G):
         """
@@ -130,53 +185,6 @@ class Leiden(Algorithm):
         delta_Q = (sum_in + k_i) / (2 * m) - ((sum_tot + k_i) / (2 * m)) ** 2
         return delta_Q
 
-    def detect_and_fix_splits(self, G):
-        """
-        检测社区内部是否存在分裂，并重新整理成新的社区。
-        """
-        community_map = nx.get_node_attributes(G, "community_id")
-        refined_communities = {}
-
-        for comm in set(community_map.values()):
-            subgraph_nodes = [node for node, c in community_map.items() if c == comm]
-            subgraph = G.subgraph(subgraph_nodes)
-            connected_components = list(nx.connected_components(subgraph))
-
-            for idx, component in enumerate(connected_components):
-                refined_communities[f"{comm}_{idx}"] = component
-
-        # 更新 G 中的社区编号
-        for new_comm_id, nodes in refined_communities.items():
-            for node in nodes:
-                G.nodes[node]["community_id"] = new_comm_id
-
-    def aggregate_graph(self, G):
-        """
-        构建新的聚合图，每个社区变成一个节点，边权重为社区间边的总和。
-        """
-        new_G = nx.Graph()
-        community_map = nx.get_node_attributes(G, "community_id")
-
-        # 构建新的社区图
-        for node1, node2, data in G.edges(data=True):
-            comm1, comm2 = community_map[node1], community_map[node2]
-            if comm1 != comm2:
-                if new_G.has_edge(comm1, comm2):
-                    new_G[comm1][comm2]["weight"] += data.get("weight", 1)
-                else:
-                    new_G.add_edge(comm1, comm2, weight=data.get("weight", 1))
-
-        # 添加新的社区节点
-        for comm in set(community_map.values()):
-            new_G.add_node(comm, community_id=comm)
-
-        # 更新G，确保社区编号正确
-        G.clear()
-        G.add_edges_from(new_G.edges(data=True))
-        nx.set_node_attributes(
-            G, {node: node for node in new_G.nodes()}, "community_id"
-        )
-
 
 if __name__ == "__main__":
     # edge_list = test_raw_data
@@ -229,6 +237,9 @@ if __name__ == "__main__":
     # 可视化结果
     from algorithm.common.util.drawer import draw_communities
 
-    draw_communities(G, pos, communities, title="Leiden_Rare", metrics=metrics)
+    draw_communities(G, pos, communities, title="Leiden", metrics=metrics)
 
     CommunityComparator(communities, true_communities).run()
+
+    d = {"G": G, "communities": communities}
+    save_pkl_to_temp(d, "typical_graph")

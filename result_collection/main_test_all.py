@@ -9,6 +9,7 @@ import torch
 
 from algorithm.algorithm_dealer import AlgorithmDealer
 from algorithm.classic.GN import GN
+from algorithm.classic.Leiden_Rare import Leiden_Rare
 from algorithm.classic.RareDetection import RareDetection
 from algorithm.classic.leiden import Leiden
 from algorithm.classic.louvain import Louvain
@@ -93,9 +94,10 @@ if __name__ == "__main__":
         GN_algorithm = GN()
         rare_algorithm = RareDetection()
         leiden_algorithm = Leiden()
+        leiden_rare_algorithm = Leiden_Rare()
 
         results = algorithmDealer.run(
-            [leiden_algorithm],
+            [leiden_rare_algorithm],
             G,
             num_clusters=len(true_communities),
         )
@@ -104,6 +106,7 @@ if __name__ == "__main__":
             time.sleep(1)
             communities = result.communities
             algorithm_name = result.algorithm_name
+            version = result.version
 
             # 计算评估指标
             evaluation = CommunityDetectionMetrics(G, communities, truth_table)
@@ -111,13 +114,14 @@ if __name__ == "__main__":
             metrics["runtime"] = result.runtime
 
             # 构造结果文件路径
-            result_filename = f"{algorithm_name}-{title}.pkl"
+            result_filename = f"{algorithm_name+version}-{title}.pkl"
             result_filepath = os.path.join(result_dir, result_filename)
 
             # 保存数据到 .pkl 文件
             save_data = {
                 "communities": communities,
                 "algorithm_name": algorithm_name,
+                "version": version,
                 "metrics": metrics,
             }
 
@@ -130,5 +134,5 @@ if __name__ == "__main__":
             # from algorithm.common.util.drawer import draw_communities
 
             # draw_communities(
-            #     G, pos, communities, title=algorithm_name + "-" + title, metrics=metrics
+            #     G, pos, communities, title=algorithm_name+version + "-" + title, metrics=metrics
             # )
