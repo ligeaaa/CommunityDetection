@@ -422,6 +422,43 @@ def compare_all_conditions(
         # **创建第二个 Y 轴**（右侧）
         ax2 = ax.twinx()
 
+        # **绘制 Runtime（左 Y 轴）**
+        ax.bar(
+            x_indexes_1 - 0.2,
+            [avg_runtime_1],
+            width=0.4,
+            label=f"{algo_1} Runtime",
+            alpha=0.8,
+            color="tab:blue",
+        )
+        ax.bar(
+            x_indexes_1 + 0.2,
+            [avg_runtime_2],
+            width=0.4,
+            label=f"{algo_2} Runtime",
+            alpha=0.8,
+            color="tab:orange",
+        )
+
+        # **绘制 Precision, Recall, Modularity（右 Y 轴）**
+        ax2.bar(
+            x_indexes_2 - 0.2,
+            [avg_precision_1, avg_recall_1, avg_modularity_1],
+            width=0.4,
+            label=f"{algo_1} Precision/Recall/Modularity",
+            alpha=0.7,
+            color="tab:green",
+        )
+
+        ax2.bar(
+            x_indexes_2 + 0.2,
+            [avg_precision_2, avg_recall_2, avg_modularity_2],
+            width=0.4,
+            label=f"{algo_2} Precision/Recall/Modularity",
+            alpha=0.7,
+            color="tab:red",
+        )
+
         # **设置 X 轴标签**
         ax.set_xticks(np.concatenate((x_indexes_1, x_indexes_2)))
         ax.set_xticklabels(x_labels_1 + x_labels_2, fontsize=12)
@@ -590,8 +627,12 @@ def compare_all_conditions(
     )
 
     # **保存图像**
-    fig1.savefig("precision_recall_comparison_grid.png", dpi=400, bbox_inches="tight")
-    fig2.savefig("avg_metrics_comparison_grid.png", dpi=400, bbox_inches="tight")
+    fig1.savefig(
+        r"result\precision_recall_comparison_grid.png", dpi=400, bbox_inches="tight"
+    )
+    fig2.savefig(
+        r"result\avg_metrics_comparison_grid.png", dpi=400, bbox_inches="tight"
+    )
 
     # **显示图表**
     plt.show()
