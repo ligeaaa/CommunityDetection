@@ -25,7 +25,7 @@ class Leiden_Rare(Algorithm):
         G: Graph,
         whether_init=True,
         seed=42,
-        num_clusters=None,
+        num_clusters=2,
         diameter_check_parameter=0.05,
         density_threshold=0.1,
         **kwargs,
@@ -49,9 +49,6 @@ class Leiden_Rare(Algorithm):
 
         # 步骤 2: 根据直径切割社区
         communities_dict = self.split_community(G, communities)
-
-        # 步骤 3：根据密度合并社区
-        # communities_dict = self.merge_community(G, communities_dict, density_threshold)
 
         # **最终返回优化后的社区**
         return [sorted(list(nodes)) for nodes in communities_dict.values()]
@@ -144,7 +141,7 @@ class Leiden_Rare(Algorithm):
                 sorted_shortest_paths[max_length]
             )  # 最长最短路径的数量
             max_length_ratio = max_length_count / total_paths if total_paths > 0 else 0
-            if max_length_ratio > 0.005:
+            if max_length_ratio > 0.0001:
                 return True
             else:
                 return False
@@ -179,9 +176,9 @@ class Leiden_Rare(Algorithm):
                 community_diameters.remove((largest_community_id, largest_diameter))
                 continue
 
-            print(
-                f"⚠️ 社区 {largest_community_id} 直径过大 ({largest_diameter} > {expected_diameter + 1})，进行谱聚类划分"
-            )
+            # print(
+            #     f"⚠️ 社区 {largest_community_id} 直径过大 ({largest_diameter} > {expected_diameter + 1})，进行谱聚类划分"
+            # )
 
             # 获取需要拆分的社区
             largest_community_nodes = communities_dict[largest_community_id]
@@ -217,9 +214,9 @@ class Leiden_Rare(Algorithm):
 
             # **如果新的最大直径仍然等于原直径，则取消切割**
             if max(new_diameters) == largest_diameter:
-                print(
-                    f"❌ 取消拆分社区 {largest_community_id}，因为拆分后最大直径未降低 ({largest_diameter})"
-                )
+                # print(
+                #     f"❌ 取消拆分社区 {largest_community_id}，因为拆分后最大直径未降低 ({largest_diameter})"
+                # )
                 community_diameters.remove((largest_community_id, largest_diameter))
             else:
                 # 删除原有社区
@@ -283,20 +280,20 @@ if __name__ == "__main__":
     # G = nx.Graph()
     # G.add_edges_from(edge_list)
     # 参数设定
-    # number_of_point = 200  # 节点数
-    # degree_exponent = 3  # 幂律指数
-    # community_size_exponent = 3  # 社区大小幂律指数
-    # average_degree = 6
-    # min_degree = 2
-    # min_community_size = 10
-    # mixing_parameter = 0.1  # 混合参数
     number_of_point = 200  # 节点数
     degree_exponent = 3  # 幂律指数
     community_size_exponent = 3  # 社区大小幂律指数
     average_degree = 6
     min_degree = 2
-    min_community_size = 15
+    min_community_size = 10
     mixing_parameter = 0.1  # 混合参数
+    # number_of_point = 200  # 节点数
+    # degree_exponent = 3  # 幂律指数
+    # community_size_exponent = 3  # 社区大小幂律指数
+    # average_degree = 6
+    # min_degree = 2
+    # min_community_size = 15
+    # mixing_parameter = 0.1  # 混合参数
 
     # 生成图
     G, true_communities = create_graph(
