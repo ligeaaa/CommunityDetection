@@ -1,4 +1,6 @@
 import random
+from collections import defaultdict
+
 import networkx as nx
 from networkx import Graph
 
@@ -14,7 +16,7 @@ class Leiden_Rare(Algorithm):
     def __init__(self):
         super().__init__()
         self.algorithm_name = "Leiden_Rare"
-        self.version = "v0.01"
+        self.version = "v0.02"
         self.graph_snapshots = []  # 存储每个阶段的G
         self.original_graph = None  # 初始图
 
@@ -25,7 +27,8 @@ class Leiden_Rare(Algorithm):
         seed=42,
         num_clusters=None,
         diameter_check_parameter=0.05,
-        **kwargs
+        density_threshold=0.1,
+        **kwargs,
     ) -> list:
         """
         使用 Leiden 预分配社区，并对直径过大的社区进行进一步划分（使用谱聚类）。
@@ -45,12 +48,34 @@ class Leiden_Rare(Algorithm):
         communities = results[0].communities
 
         # 步骤 2: 根据直径切割社区
-        communities_dict = self.split_graph(G, communities)
+        communities_dict = self.split_community(G, communities)
+
+        # 步骤 3：根据密度合并社区
+        # communities_dict = self.merge_community(G, communities_dict, density_threshold)
 
         # **最终返回优化后的社区**
         return [sorted(list(nodes)) for nodes in communities_dict.values()]
 
-    def split_graph(self, G, communities):
+    def split_community(self, G, communities):
+        """
+
+        Args:
+            G:
+            communities:
+
+        Returns:
+            dict: A dictionary representing community detection results.
+                Structure:
+                    - Keys (int): Community IDs.
+                    - Values (list of int): List of node IDs belonging to the corresponding community.
+                Example:
+                    {
+                        0: [0, 1, 2, 3, 4],  # Community 0 contains nodes 0,1,2,3,4
+                        1: [5, 6, 7, 8, 9],  # Community 1 contains nodes 5,6,7,8,9
+                        2: [10, 11, 12]      # Community 2 contains nodes 10,11,12
+                    }
+        """
+
         def expected_lfr_diameter(n):
             """
             计算 LFR 预期直径
@@ -89,6 +114,41 @@ class Leiden_Rare(Algorithm):
 
             return sorted_diameters
 
+        def check_split(G, communities_dict, largest_community_id):
+            """
+            计算社区子图中所有节点对的最短路径，整理并统计最长最短路径比例。
+            """
+            # 获取子图
+            sub_G = G.subgraph(communities_dict[largest_community_id])
+
+            # 计算所有节点对的最短路径长度
+            shortest_path_dict = defaultdict(list)
+            path_lengths = dict(nx.all_pairs_shortest_path_length(sub_G))
+
+            for node1 in path_lengths:
+                for node2, length in path_lengths[node1].items():
+                    if node1 < node2:  # 避免重复存储 (1,2) 和 (2,1)
+                        shortest_path_dict[length].append([node1, node2])
+
+            # 按最短路径长度从大到小排序
+            sorted_shortest_paths = dict(
+                sorted(shortest_path_dict.items(), key=lambda x: x[0], reverse=True)
+            )
+
+            # 计算最长的最短路径占比
+            max_length = max(sorted_shortest_paths.keys())  # 获取最长的最短路径长度
+            total_paths = (
+                sub_G.number_of_nodes() * (sub_G.number_of_nodes() - 1) / 2
+            )  # 总最短路径数量
+            max_length_count = len(
+                sorted_shortest_paths[max_length]
+            )  # 最长最短路径的数量
+            max_length_ratio = max_length_count / total_paths if total_paths > 0 else 0
+            if max_length_ratio > 0.005:
+                return True
+            else:
+                return False
+
         # 计算预期直径
         expected_diameter = round(
             expected_lfr_diameter(
@@ -100,7 +160,7 @@ class Leiden_Rare(Algorithm):
         community_diameters = compute_community_diameters(G, communities)
 
         # 构建社区字典
-        communities_dict = {idx: set(nodes) for idx, nodes in enumerate(communities)}
+        communities_dict = {idx: nodes for idx, nodes in enumerate(communities)}
 
         # 迭代优化
         next_community_id = len(communities_dict)  # 记录新社区编号
@@ -110,11 +170,18 @@ class Leiden_Rare(Algorithm):
                 dict(community_diameters).items(), key=lambda x: x[1]
             )
 
-            # 如果所有社区直径都 ≤ 预期直径，结束
+            # 如果所有社区直径都 小于 预期直径，结束
             if largest_diameter <= expected_diameter + 1:
                 break
 
-            # print(f"⚠️ 社区 {largest_community_id} 直径过大 ({largest_diameter} > {expected_diameter + 1})，进行谱聚类划分")
+            # 如果不满足条件，则不split，并把该社区从待处理社区中移除
+            if not check_split(G, communities_dict, largest_community_id):
+                community_diameters.remove((largest_community_id, largest_diameter))
+                continue
+
+            print(
+                f"⚠️ 社区 {largest_community_id} 直径过大 ({largest_diameter} > {expected_diameter + 1})，进行谱聚类划分"
+            )
 
             # 获取需要拆分的社区
             largest_community_nodes = communities_dict[largest_community_id]
@@ -150,7 +217,9 @@ class Leiden_Rare(Algorithm):
 
             # **如果新的最大直径仍然等于原直径，则取消切割**
             if max(new_diameters) == largest_diameter:
-                # print(f"❌ 取消拆分社区 {largest_community_id}，因为拆分后最大直径未降低 ({largest_diameter})")
+                print(
+                    f"❌ 取消拆分社区 {largest_community_id}，因为拆分后最大直径未降低 ({largest_diameter})"
+                )
                 community_diameters.remove((largest_community_id, largest_diameter))
             else:
                 # 删除原有社区
@@ -176,6 +245,37 @@ class Leiden_Rare(Algorithm):
 
         return communities_dict
 
+    def merge_community(self, G, communities_dict, density_threshold):
+        """
+        根据紧密度的变化来合并社区
+        Args:
+            G: nx.graph
+            communities_dict: A dictionary representing community detection results.
+            density_threshold
+
+        Returns:
+            dict: A dictionary representing community detection results.
+                Structure:
+                    - Keys (int): Community IDs.
+                    - Values (list of int): List of node IDs belonging to the corresponding community.
+                Example:
+                    {
+                        0: [0, 1, 2, 3, 4],  # Community 0 contains nodes 0,1,2,3,4
+                        1: [5, 6, 7, 8, 9],  # Community 1 contains nodes 5,6,7,8,9
+                        2: [10, 11, 12]      # Community 2 contains nodes 10,11,12
+                    }
+        """
+
+        # 社区之间尝试两两合并
+
+        # 如果紧密度的偏差减小且大于阈值，则记录
+        # 如何计算偏差？？？？
+        # 选取偏差减小最多的两个社区进行合并
+
+        # 循环，直到没有社区可以合并
+
+        return communities_dict
+
 
 if __name__ == "__main__":
     # edge_list = test_raw_data
@@ -183,12 +283,19 @@ if __name__ == "__main__":
     # G = nx.Graph()
     # G.add_edges_from(edge_list)
     # 参数设定
+    # number_of_point = 200  # 节点数
+    # degree_exponent = 3  # 幂律指数
+    # community_size_exponent = 3  # 社区大小幂律指数
+    # average_degree = 6
+    # min_degree = 2
+    # min_community_size = 10
+    # mixing_parameter = 0.1  # 混合参数
     number_of_point = 200  # 节点数
     degree_exponent = 3  # 幂律指数
     community_size_exponent = 3  # 社区大小幂律指数
     average_degree = 6
     min_degree = 2
-    min_community_size = 10
+    min_community_size = 15
     mixing_parameter = 0.1  # 混合参数
 
     # 生成图
@@ -203,7 +310,7 @@ if __name__ == "__main__":
         seed=53,
     )
     pos = nx.spring_layout(G, seed=42)
-    # draw_communities(G, pos, true_communities)
+
     algorithmDealer = AlgorithmDealer()
     leiden_rare_algorithm = Leiden_Rare()
     results = algorithmDealer.run(
@@ -227,6 +334,7 @@ if __name__ == "__main__":
     # 可视化结果
     from algorithm.common.util.drawer import draw_communities
 
+    draw_communities(G, pos, true_communities)
     draw_communities(G, pos, communities, title="Leiden_Rare", metrics=metrics)
 
     CommunityComparator(communities, true_communities).run()
