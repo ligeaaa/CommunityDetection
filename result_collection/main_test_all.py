@@ -5,7 +5,6 @@ import pickle
 import time
 
 import networkx as nx
-import torch
 
 from algorithm.algorithm_dealer import AlgorithmDealer
 from algorithm.classic.GN import GN
@@ -17,7 +16,6 @@ from algorithm.classic.spectral_clustering import SpectralCluster
 from algorithm.common.constant.constant_number import random_seed
 from algorithm.common.util.result_evaluation import CommunityDetectionMetrics
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # benchmark生成参数
 number_of_point = 150  # 节点数

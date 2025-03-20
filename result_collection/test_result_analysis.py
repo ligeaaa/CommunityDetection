@@ -642,7 +642,7 @@ if __name__ == "__main__":
     # 结果文件目录
     result_dir = r"D:\code\FYP\CommunityDetection\result_collection\result\test"
     # 是否比较所有组合（27种）
-    compare_all_combinations = True
+    compare_all_combinations = False
     # 对比的两种算法
     algorithm_name_1 = "Leiden_Rarev0.01"
     algorithm_name_2 = "Leiden"

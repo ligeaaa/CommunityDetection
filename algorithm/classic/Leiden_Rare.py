@@ -33,7 +33,7 @@ class Leiden_Rare(Algorithm):
         random.seed(seed)
         self.original_graph = G.copy()
 
-        # **步骤 1: 使用 Leiden 进行初步社区检测**
+        # 步骤 1: 使用 Leiden 进行初步社区检测
         algorithmDealer = AlgorithmDealer()
         leiden_algorithm = Leiden()
         results = algorithmDealer.run(
@@ -44,38 +44,83 @@ class Leiden_Rare(Algorithm):
         )
         communities = results[0].communities
 
-        # **步骤 2: 计算预期直径**
+        # 步骤 2: 根据直径切割社区
+        communities_dict = self.split_graph(G, communities)
+
+        # **最终返回优化后的社区**
+        return [sorted(list(nodes)) for nodes in communities_dict.values()]
+
+    def split_graph(self, G, communities):
+        def expected_lfr_diameter(n):
+            """
+            计算 LFR 预期直径
+            """
+            import numpy as np
+
+            return np.log(n) / np.log(np.log(n))
+
+        def compute_community_diameters(G, communities):
+            """
+            计算每个社区的直径，并按照直径从大到小排序返回。
+
+            参数:
+                G: networkx.Graph - 原始图
+                communities: list - 社区列表，每个社区是一个节点 ID 列表
+
+            返回:
+                list - [(社区索引, 直径)] 按直径降序排列
+            """
+            diameters = {}
+
+            for i, community in enumerate(communities):
+                subgraph = G.subgraph(community)  # 提取子图
+
+                if nx.is_connected(subgraph):  # 如果连通
+                    diameters[i] = nx.diameter(subgraph)
+                else:
+                    # 对于不连通的图，计算最大连通子图的直径
+                    largest_cc = max(nx.connected_components(subgraph), key=len)
+                    diameters[i] = nx.diameter(G.subgraph(largest_cc))
+
+            # 按直径降序排序
+            sorted_diameters = sorted(
+                diameters.items(), key=lambda x: x[1], reverse=True
+            )
+
+            return sorted_diameters
+
+        # 计算预期直径
         expected_diameter = round(
-            self.expected_lfr_diameter(
+            expected_lfr_diameter(
                 G.number_of_nodes() / 2,  # 取一半节点数
             )
         )
 
-        # **步骤 3: 计算初始社区直径**
-        community_diameters = self.compute_community_diameters(G, communities)
+        # 计算初始社区直径
+        community_diameters = compute_community_diameters(G, communities)
 
-        # **构建社区字典** (用于存储当前社区)
+        # 构建社区字典
         communities_dict = {idx: set(nodes) for idx, nodes in enumerate(communities)}
 
-        # **步骤 4: 迭代优化**
+        # 迭代优化
         next_community_id = len(communities_dict)  # 记录新社区编号
         while True:
-            # **找到直径最大的社区**
+            # 找到直径最大的社区
             largest_community_id, largest_diameter = max(
                 dict(community_diameters).items(), key=lambda x: x[1]
             )
 
-            # **如果所有社区直径都 ≤ 预期直径，结束**
+            # 如果所有社区直径都 ≤ 预期直径，结束
             if largest_diameter <= expected_diameter + 1:
                 break
 
             # print(f"⚠️ 社区 {largest_community_id} 直径过大 ({largest_diameter} > {expected_diameter + 1})，进行谱聚类划分")
 
-            # **获取需要拆分的社区**
+            # 获取需要拆分的社区
             largest_community_nodes = communities_dict[largest_community_id]
             subgraph = G.subgraph(largest_community_nodes).copy()
 
-            # **使用谱聚类进行社区拆分**
+            # 使用谱聚类进行社区拆分
             algorithmDealer = AlgorithmDealer()
             sc_algorithm = SpectralCluster()
             results = algorithmDealer.run(
@@ -86,7 +131,7 @@ class Leiden_Rare(Algorithm):
             )
             new_communities = results[0].communities  # 拆分出的新社区
 
-            # **计算新社区直径**
+            # 计算新社区直径
             new_diameters = []
             new_community_dict = {}
 
@@ -108,11 +153,11 @@ class Leiden_Rare(Algorithm):
                 # print(f"❌ 取消拆分社区 {largest_community_id}，因为拆分后最大直径未降低 ({largest_diameter})")
                 community_diameters.remove((largest_community_id, largest_diameter))
             else:
-                # **删除原有社区**
+                # 删除原有社区
                 del communities_dict[largest_community_id]
                 community_diameters.remove((largest_community_id, largest_diameter))
 
-                # **更新新社区信息**
+                # 更新新社区信息
                 for comm_id, new_comm in new_community_dict.items():
                     subgraph = G.subgraph(new_comm)
 
@@ -129,44 +174,7 @@ class Leiden_Rare(Algorithm):
                     communities_dict[comm_id] = new_comm
                     community_diameters.append((comm_id, new_diameter))
 
-        # **最终返回优化后的社区**
-        return [sorted(list(nodes)) for nodes in communities_dict.values()]
-
-    def expected_lfr_diameter(self, n):
-        """
-        计算 LFR 预期直径
-        """
-        import numpy as np
-
-        return np.log(n) / np.log(np.log(n))
-
-    def compute_community_diameters(self, G, communities):
-        """
-        计算每个社区的直径，并按照直径从大到小排序返回。
-
-        参数:
-            G: networkx.Graph - 原始图
-            communities: list - 社区列表，每个社区是一个节点 ID 列表
-
-        返回:
-            list - [(社区索引, 直径)] 按直径降序排列
-        """
-        diameters = {}
-
-        for i, community in enumerate(communities):
-            subgraph = G.subgraph(community)  # 提取子图
-
-            if nx.is_connected(subgraph):  # 如果连通
-                diameters[i] = nx.diameter(subgraph)
-            else:
-                # 对于不连通的图，计算最大连通子图的直径
-                largest_cc = max(nx.connected_components(subgraph), key=len)
-                diameters[i] = nx.diameter(G.subgraph(largest_cc))
-
-        # 按直径降序排序
-        sorted_diameters = sorted(diameters.items(), key=lambda x: x[1], reverse=True)
-
-        return sorted_diameters
+        return communities_dict
 
 
 if __name__ == "__main__":
