@@ -24,6 +24,8 @@ def draw_communities(
     title=None,
     metrics=None,
 ):
+    # 按照社区大小从大到小排序
+    communities = sorted(communities, key=len, reverse=True)
     total_nodes = G.number_of_nodes()
 
     # 如果节点数超过 max_nodes，则随机选择一部分节点
