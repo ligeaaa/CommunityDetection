@@ -13,7 +13,7 @@ def save_pkl_to_temp(data, filename):
 
     with open(filename, "wb") as f:
         pickle.dump(data, f)
-    print(f"数据已成功保存为{filename}l")
+    print(f"数据已成功保存为{filename}")
 
 
 def read_pkl_from_temp(filename):

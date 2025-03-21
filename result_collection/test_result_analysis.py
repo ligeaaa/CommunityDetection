@@ -644,8 +644,9 @@ if __name__ == "__main__":
     # 是否比较所有组合（27种）
     compare_all_combinations = False
     # 对比的两种算法
-    algorithm_name_1 = "Leiden_Rarev0.01"
-    algorithm_name_2 = "Leiden"
+    algorithm_name_1 = "Leiden"
+    # algorithm_name_1 = "SpectralCluster"
+    algorithm_name_2 = "Leiden_Pv0.01"
     data_list_1 = read_data(
         result_dir,
         algorithm=algorithm_name_1,

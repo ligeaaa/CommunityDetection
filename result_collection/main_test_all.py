@@ -8,6 +8,7 @@ import networkx as nx
 
 from algorithm.algorithm_dealer import AlgorithmDealer
 from algorithm.classic.GN import GN
+from algorithm.classic.Leiden_P import LeidenP
 from algorithm.classic.Leiden_Rare import Leiden_Rare
 from algorithm.classic.RareDetection import RareDetection
 from algorithm.classic.leiden import Leiden
@@ -69,10 +70,10 @@ if __name__ == "__main__":
         params = data["params"]
         title = data["title"]
 
-        if flag and title != "178_point-level2, density-level3, community_size-level3":
-            continue
-        else:
-            flag = False
+        # if flag and title != "178_point-level2, density-level3, community_size-level3":
+        #     continue
+        # else:
+        #     flag = False
 
         pos = nx.spring_layout(G, seed=random_seed)
         # 返回结果，包括运行时间，正确率，可视化网络等
@@ -93,9 +94,10 @@ if __name__ == "__main__":
         rare_algorithm = RareDetection()
         leiden_algorithm = Leiden()
         leiden_rare_algorithm = Leiden_Rare()
+        leidenP = LeidenP()
 
         results = algorithmDealer.run(
-            [leiden_rare_algorithm],
+            [leidenP],
             G,
             num_clusters=len(true_communities),
         )
