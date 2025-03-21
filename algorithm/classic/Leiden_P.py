@@ -1,3 +1,4 @@
+import math
 import random
 import networkx as nx
 import numpy as np
@@ -191,19 +192,20 @@ class LeidenP(Algorithm):
                 修正后的模块度增益
             """
             # 目标社区原始直径与预期直径
-            # expected_diameter_before = self.expected_lfr_diameter(
-            #     len(pre_target_community_nodes)
-            # )
+            expected_diameter_before = self.expected_lfr_diameter(
+                len(pre_target_community_nodes)
+            )
             pre_subgraph = G.subgraph(pre_target_community_nodes)
             if nx.is_connected(pre_subgraph):
-                actual_diameter_before = nx.diameter(pre_subgraph)
+                # actual_diameter_before = nx.diameter(pre_subgraph)
+                ...
             else:
                 return 0
 
             # 模拟将 node 加入社区后的直径与预期值
-            after_nodes = pre_target_community_nodes.copy()
-            after_nodes.append(node)
-            expected_diameter_after = self.expected_lfr_diameter(len(after_nodes))
+            expected_diameter_after = self.expected_lfr_diameter(
+                len(pre_target_community_nodes) + 1
+            )
             # after_subgraph = G.subgraph(after_nodes)
             if nx.is_connected(pre_subgraph):
                 # actual_diameter_after = nx.diameter(after_subgraph)
@@ -215,9 +217,9 @@ class LeidenP(Algorithm):
             # delta_diameter = (actual_diameter_after - expected_diameter_after) - \
             #                  (actual_diameter_before - expected_diameter_before)
 
-            delta_diameter = expected_diameter_after - actual_diameter_before
+            delta_diameter = expected_diameter_after - expected_diameter_before
 
-            diameter_penalty = lambda_penalty * delta_diameter
+            diameter_penalty = math.sqrt(lambda_penalty * delta_diameter)
 
             return diameter_penalty
 
