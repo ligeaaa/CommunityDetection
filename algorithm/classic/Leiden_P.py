@@ -1,14 +1,13 @@
 import math
 import random
 import networkx as nx
-import numpy as np
 from networkx import Graph
 from collections import defaultdict
 
 from algorithm.algorithm_dealer import AlgorithmDealer, Algorithm
 from algorithm.common.benchmark.benchmark_graph import create_graph
 from algorithm.common.util.CommunityCompare import CommunityComparator
-from algorithm.common.util.data_reader.save_pkl import save_pkl_to_temp
+from algorithm.common.util.save_pkl import save_pkl_to_temp
 from algorithm.common.util.drawer import draw_communities
 from algorithm.common.util.result_evaluation import CommunityDetectionMetrics
 
@@ -19,7 +18,7 @@ class LeidenP(Algorithm):
         self.algorithm_name = "Leiden_P"
         self.graph_snapshots = []  # 存储每个阶段的G
         self.original_graph = None  # 初始图
-        self.version = "v0.01"
+        self.version = "v0.02"
 
     def process(
         self,
@@ -47,13 +46,11 @@ class LeidenP(Algorithm):
         while True:
 
             iteration += 1
+            # print(f"-------------{iteration}--------------")
+
             self.move_nodes_fast(G)
             self.detect_and_fix_splits(G)
             self.graph_snapshots.append(G.copy())  # 记录每个阶段的G
-            if if_draw and pos is not None and truth_table is not None:
-                self.draw_current_result(
-                    self.original_graph, pos, iteration, truth_table
-                )
 
             current_communities = set(
                 nx.get_node_attributes(G, "community_id").values()
@@ -62,23 +59,68 @@ class LeidenP(Algorithm):
             # 终止条件：
             # 1. 若 num_clusters 指定，则社区数小于等于 num_clusters 时终止
             # 2. 若未指定 num_clusters，则当社区不再变化时终止
+
+            if if_draw and pos is not None and truth_table is not None:
+                self.draw_current_result(
+                    self.original_graph, pos, iteration, truth_table
+                )
+
             if (
                 num_clusters is not None and len(current_communities) <= num_clusters
             ) or (num_clusters is None and current_communities == prev_communities):
                 break
 
             prev_communities = current_communities.copy()
+
             self.aggregate_graph(G)
 
         return self.get_final_communities()
 
-    def draw_current_result(self, G, pos, iteration, truth_table):
-        temp_communities = self.get_final_communities()
-        evaluation = CommunityDetectionMetrics(G, temp_communities, truth_table)
-        metrics = evaluation.evaluate()
-        draw_communities(
-            G, pos, temp_communities, title=f"Leiden_P_{iteration}", metrics=metrics
-        )
+    def draw_current_result(
+        self, G, pos, iteration, truth_table=None, communities=None
+    ):
+        if communities is None:
+            temp_communities = self.get_final_communities()
+        else:
+            temp_communities = communities
+        if truth_table is not None:
+            evaluation = CommunityDetectionMetrics(G, temp_communities, truth_table)
+            metrics = evaluation.evaluate()
+            draw_communities(
+                G, pos, temp_communities, title=f"Leiden_P_{iteration}", metrics=metrics
+            )
+        else:
+            draw_communities(G, pos, temp_communities, title=f"Leiden_P_{iteration}")
+
+    def trace_original_nodes(self, current_community_id, level=None):
+        """
+        从当前社区ID递归追溯，获取原始图中属于该社区的所有节点。
+
+        参数：
+            current_community_id: 当前阶段的社区 ID
+            level: 从第几层（graph_snapshots 的索引）开始追溯，如果为 None 默认最后一层
+
+        返回：
+            一个列表，包含原始图中属于该社区的所有节点
+        """
+        if level is None:
+            level = len(self.graph_snapshots)
+
+        # 起点：当前社区的 ID
+        current_ids = {current_community_id}
+
+        # 从当前层逐步回溯到原始图（索引为 0）
+        for L in range(level, 0, -1):
+            snapshot = self.graph_snapshots[L - 1]
+            next_ids = set()
+            for node in snapshot.nodes():
+                comm_id = snapshot.nodes[node]["community_id"]
+                if comm_id in current_ids:
+                    next_ids.add(node)
+            current_ids = next_ids
+
+        # 此时 current_ids 就是原始图中属于这个社区的节点
+        return list(current_ids)
 
     def get_final_communities(self):
         """
@@ -177,6 +219,7 @@ class LeidenP(Algorithm):
             G,
             node,
             pre_target_community_nodes,
+            pre_current_community_nodes,
             lambda_penalty=1.0,
         ):
             """
@@ -203,23 +246,26 @@ class LeidenP(Algorithm):
                 return 0
 
             # 模拟将 node 加入社区后的直径与预期值
+            # TODO 目标社区节点不仅仅是加一
             expected_diameter_after = self.expected_lfr_diameter(
-                len(pre_target_community_nodes) + 1
+                len(pre_target_community_nodes) + len(pre_current_community_nodes)
             )
-            # after_subgraph = G.subgraph(after_nodes)
-            if nx.is_connected(pre_subgraph):
+            after_nodes = pre_target_community_nodes.copy()
+            after_nodes.extend(pre_current_community_nodes)
+            after_subgraph = G.subgraph(after_nodes)
+            if nx.is_connected(after_subgraph):
                 # actual_diameter_after = nx.diameter(after_subgraph)
                 ...
             else:
                 return 0
 
-            # 惩罚项（可以换其他策略）
-            # delta_diameter = (actual_diameter_after - expected_diameter_after) - \
-            #                  (actual_diameter_before - expected_diameter_before)
-
-            delta_diameter = expected_diameter_after - expected_diameter_before
-
-            diameter_penalty = math.sqrt(lambda_penalty * delta_diameter)
+            # TODO 除以节点变化数量
+            delta_diameter = math.sqrt(
+                (expected_diameter_after - expected_diameter_before)
+                / len(pre_current_community_nodes)
+            )
+            # print(f"delta_diameter:{delta_diameter}")
+            diameter_penalty = lambda_penalty * delta_diameter
 
             return diameter_penalty
 
@@ -236,16 +282,23 @@ class LeidenP(Algorithm):
                 gain = self.calculate_modularity_gain(G, node, neighbor_community)
 
                 if gain > 0:
-                    pre_target_community_nodes = [
-                        n
-                        for n in G.nodes
-                        if G.nodes[n]["community_id"] == neighbor_community
-                    ]
-                    if len(pre_target_community_nodes) > 17:
+                    pre_target_community_nodes = self.trace_original_nodes(
+                        neighbor_community
+                    )
+                    pre_current_community_nodes = self.trace_original_nodes(
+                        G.nodes[node]["community_id"]
+                    )
+
+                    if (
+                        len(pre_current_community_nodes) > 3
+                        or len(pre_target_community_nodes) > 3
+                    ):
+                        # print(len(pre_target_community_nodes))
                         diameter_penalty = adjusted_modularity_gain(
-                            G,
+                            self.original_graph,
                             node,
                             pre_target_community_nodes,
+                            pre_current_community_nodes,
                             lambda_penalty=1.0,
                         )
                         gain = gain * diameter_penalty
@@ -277,9 +330,14 @@ class LeidenP(Algorithm):
 
     def expected_lfr_diameter(self, n):
         """
-        计算 LFR 预期直径
+        改进版本：社区大小 n 对应的预期直径，单调递增。
+        使用经验公式：a * log(n) + b
         """
-        return np.log(n) / np.log(np.log(n))
+        import numpy as np
+
+        a = 0.61
+        b = 1.58
+        return a * np.log(n) + b
 
 
 if __name__ == "__main__":
@@ -288,6 +346,16 @@ if __name__ == "__main__":
     # G = nx.Graph()
     # G.add_edges_from(edge_list)
     # 参数设定
+    # import random
+    # random.seed(52)
+    # number_of_point = int(random.random() * 300)  # 节点数
+    # degree_exponent = 3  # 幂律指数
+    # community_size_exponent = random.random()*2+1  # 社区大小幂律指数
+    # average_degree = int(random.random() * 5)+1
+    # min_degree = int(random.random() * 10)+1
+    # min_community_size = number_of_point * random.random() * 0.3
+    # mixing_parameter = random.random() * 0.15  # 混合参数
+
     number_of_point = 200  # 节点数
     degree_exponent = 3  # 幂律指数
     community_size_exponent = 3  # 社区大小幂律指数
