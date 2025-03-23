@@ -16,7 +16,7 @@ class Leiden_Rare(Algorithm):
     def __init__(self):
         super().__init__()
         self.algorithm_name = "Leiden_Rare"
-        self.version = "v0.02"
+        self.version = "v0.03"
         self.graph_snapshots = []  # 存储每个阶段的G
         self.original_graph = None  # 初始图
 
@@ -75,11 +75,14 @@ class Leiden_Rare(Algorithm):
 
         def expected_lfr_diameter(n):
             """
-            计算 LFR 预期直径
+            改进版本：社区大小 n 对应的预期直径，单调递增。
+            使用经验公式：a * log(n) + b
             """
             import numpy as np
 
-            return np.log(n) / np.log(np.log(n))
+            a = 0.61
+            b = 1.58
+            return a * np.log(n) + b
 
         def compute_community_diameters(G, communities):
             """
@@ -147,11 +150,7 @@ class Leiden_Rare(Algorithm):
                 return False
 
         # 计算预期直径
-        expected_diameter = round(
-            expected_lfr_diameter(
-                G.number_of_nodes() / 2,  # 取一半节点数
-            )
-        )
+        expected_diameter = round(expected_lfr_diameter(G.number_of_nodes()))
 
         # 计算初始社区直径
         community_diameters = compute_community_diameters(G, communities)
