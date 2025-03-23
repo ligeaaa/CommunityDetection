@@ -1,4 +1,3 @@
-import math
 import random
 import networkx as nx
 from networkx import Graph
@@ -7,7 +6,8 @@ from collections import defaultdict
 from algorithm.algorithm_dealer import AlgorithmDealer, Algorithm
 from algorithm.common.benchmark.benchmark_graph import create_graph
 from algorithm.common.util.CommunityCompare import CommunityComparator
-from algorithm.common.util.save_pkl import save_pkl_to_temp
+
+# from algorithm.common.util.save_pkl import save_pkl_to_temp
 from algorithm.common.util.drawer import draw_communities
 from algorithm.common.util.result_evaluation import CommunityDetectionMetrics
 
@@ -35,6 +35,7 @@ class LeidenP(Algorithm):
         主要的 Leiden 算法入口，执行社区发现。
         若分类后的社区数小于等于 num_clusters，则提前终止。
         """
+
         random.seed(seed)
         self.original_graph = G.copy()
         # 初始化每个节点的社区编号
@@ -48,8 +49,13 @@ class LeidenP(Algorithm):
             iteration += 1
             # print(f"-------------{iteration}--------------")
 
+            # while True:
+            #     print(f"-------------{iteration}--------------")
+            #     if not self.move_nodes_fast(G):
+            #         break
             self.move_nodes_fast(G)
             self.detect_and_fix_splits(G)
+
             self.graph_snapshots.append(G.copy())  # 记录每个阶段的G
 
             current_communities = set(
@@ -62,17 +68,17 @@ class LeidenP(Algorithm):
 
             if if_draw and pos is not None and truth_table is not None:
                 self.draw_current_result(
-                    self.original_graph, pos, iteration, truth_table
+                    self.original_graph.copy(), pos, iteration, truth_table
                 )
 
             if (
                 num_clusters is not None and len(current_communities) <= num_clusters
-            ) or (num_clusters is None and current_communities == prev_communities):
+            ) or current_communities == prev_communities:
                 break
 
             prev_communities = current_communities.copy()
 
-            self.aggregate_graph(G)
+            G = self.aggregate_graph(G)
 
         return self.get_final_communities()
 
@@ -92,7 +98,7 @@ class LeidenP(Algorithm):
         else:
             draw_communities(G, pos, temp_communities, title=f"Leiden_P_{iteration}")
 
-    def trace_original_nodes(self, current_community_id, level=None):
+    def trace_original_nodes(self, current_community_id, G=None, level=None):
         """
         从当前社区ID递归追溯，获取原始图中属于该社区的所有节点。
 
@@ -103,20 +109,25 @@ class LeidenP(Algorithm):
         返回：
             一个列表，包含原始图中属于该社区的所有节点
         """
+        temp_graph_snapshots = self.graph_snapshots.copy()
+        if G is not None:
+            temp_graph_snapshots.append(G)
+        current_community_id = int(current_community_id)
+
         if level is None:
-            level = len(self.graph_snapshots)
+            level = len(temp_graph_snapshots)
 
         # 起点：当前社区的 ID
         current_ids = {current_community_id}
 
         # 从当前层逐步回溯到原始图（索引为 0）
         for L in range(level, 0, -1):
-            snapshot = self.graph_snapshots[L - 1]
+            snapshot = temp_graph_snapshots[L - 1]
             next_ids = set()
             for node in snapshot.nodes():
                 comm_id = snapshot.nodes[node]["community_id"]
-                if comm_id in current_ids:
-                    next_ids.add(node)
+                if int(comm_id) in current_ids:
+                    next_ids.add(int(node))
             current_ids = next_ids
 
         # 此时 current_ids 就是原始图中属于这个社区的节点
@@ -124,29 +135,27 @@ class LeidenP(Algorithm):
 
     def get_final_communities(self):
         """
-        逐步回溯 `graph_snapshots`，还原最终的社区结构。
+        逐步回溯 graph_snapshots，还原最终的社区结构。
+        追踪每一轮合并的社区对应的原始节点。
         """
-        final_communities = {}
+        final_snapshot = self.graph_snapshots[-1]
+        community_map = defaultdict(list)
 
-        # 初始化最终社区映射
-        last_snapshot = self.graph_snapshots[-1]
-        for node in last_snapshot.nodes():
-            final_communities[node] = node
+        # 获取最终图中每个社区的代表节点（合并后的节点）
+        for node in final_snapshot.nodes():
+            comm_id = final_snapshot.nodes[node]["community_id"]
+            community_map[comm_id].append(node)
 
-        # 逆向追踪社区合并过程
-        for snapshot in reversed(self.graph_snapshots[:-1]):
-            new_mapping = {}
-            for node in snapshot.nodes():
-                community_id = snapshot.nodes[node]["community_id"]
-                final_community = final_communities.get(community_id, community_id)
-                new_mapping[node] = final_community
-            final_communities = new_mapping
+        final_communities = []
 
-        # 组织最终社区结构
-        communities = defaultdict(set)
-        for node, comm_id in final_communities.items():
-            communities[comm_id].add(node)
-        return [sorted(list(nodes)) for nodes in communities.values()]
+        # 对于每个最终社区，回溯找到原始图中属于该社区的所有节点
+        for comm_id, representative_nodes in community_map.items():
+            original_nodes = set()
+            traced_nodes = self.trace_original_nodes(int(comm_id))
+            original_nodes.update(traced_nodes)
+            final_communities.append(sorted(list(original_nodes)))
+
+        return final_communities
 
     def detect_and_fix_splits(self, G):
         """
@@ -155,13 +164,16 @@ class LeidenP(Algorithm):
         community_map = nx.get_node_attributes(G, "community_id")
         refined_communities = {}
 
+        flag = 0
+
         for comm in set(community_map.values()):
             subgraph_nodes = [node for node, c in community_map.items() if c == comm]
             subgraph = G.subgraph(subgraph_nodes)
             connected_components = list(nx.connected_components(subgraph))
 
             for idx, component in enumerate(connected_components):
-                refined_communities[f"{comm}_{idx}"] = component
+                refined_communities[f"{flag}"] = component
+                flag += 1
 
         # 更新 G 中的社区编号
         for new_comm_id, nodes in refined_communities.items():
@@ -188,127 +200,120 @@ class LeidenP(Algorithm):
         for comm in set(community_map.values()):
             new_G.add_node(comm, community_id=comm)
 
-        # 更新G，确保社区编号正确
-        G.clear()
-        G.add_edges_from(new_G.edges(data=True))
-        nx.set_node_attributes(
-            G, {node: node for node in new_G.nodes()}, "community_id"
-        )
+        return new_G
 
     def move_nodes_fast(self, G):
         """
         通过模块度增益优化移动节点，以优化社区划分。
+        全局构建模块度增益矩阵，贪心选取最大模块度增益对，受限于直径约束。
         """
-        nodes = list(G.nodes())
-        random.shuffle(nodes)
+        expected_diameter = (
+            self.expected_lfr_diameter(self.original_graph.number_of_nodes() * 2) + 1
+        )
+        communities = list(set(nx.get_node_attributes(G, "community_id").values()))
+        N = len(communities)
 
-        for node in nodes:
-            best_community = self.best_community(G, node)
-            if (
-                best_community is not None
-                and best_community != G.nodes[node]["community_id"]
+        comm_index_map = {comm: idx for idx, comm in enumerate(communities)}
+        index_comm_map = {idx: comm for comm, idx in comm_index_map.items()}
+
+        modularity_matrix = [[-float("inf")] * N for _ in range(N)]
+
+        # 构建模块度增益矩阵（行表示节点所属社区，列表示目标社区）
+        for node in G.nodes():
+            node_comm = G.nodes[node]["community_id"]
+            modularity_results = self.get_modularity_results(G, node)
+            if not isinstance(modularity_results, dict):
+                continue
+            for target_comm, gain in modularity_results.items():
+                i = comm_index_map[node_comm]
+                j = comm_index_map[target_comm]
+                modularity_matrix[i][j] = max(modularity_matrix[i][j], gain)
+
+        visited_communities = set()
+        visited_pairs = set()
+        changed = False
+
+        while True:
+            max_gain = -float("inf")
+            best_pair = None
+            for i in range(N):
+                for j in range(N):
+                    if (
+                        i == j
+                        or i in visited_communities
+                        or j in visited_communities
+                        or (i, j) in visited_pairs
+                    ):
+                        continue
+                    if modularity_matrix[i][j] > max_gain:
+                        max_gain = modularity_matrix[i][j]
+                        best_pair = (i, j)
+
+            if best_pair is None:
+                break
+
+            i, j = best_pair
+            comm_i = index_comm_map[i]
+            comm_j = index_comm_map[j]
+
+            nodes_i = self.trace_original_nodes(comm_i, G=G.copy())
+            nodes_j = self.trace_original_nodes(comm_j, G=G.copy())
+            merged_nodes = list(set(nodes_i + nodes_j))
+            subgraph = self.original_graph.subgraph(merged_nodes)
+
+            if (not nx.is_connected(subgraph)) or (
+                nx.diameter(subgraph) > expected_diameter
             ):
-                G.nodes[node]["community_id"] = best_community
+                visited_pairs.add((i, j))
+                visited_pairs.add((j, i))
+                continue
 
-    def best_community(self, G, node):
+            # print(f"Trying merge community {comm_i} into {comm_j}, diameter: {nx.diameter(subgraph)}")
+
+            # 修改 comm_i 社区内所有节点的 community_id 为 comm_j
+            for node in G.nodes():
+                if G.nodes[node]["community_id"] == comm_i:
+                    G.nodes[node]["community_id"] = comm_j
+
+            changed = True
+
+            # 标记两个社区为已访问
+            visited_communities.add(i)
+            visited_communities.add(j)
+
+        return changed
+
+    def get_modularity_results(self, G, node):
         """
         计算节点加入不同社区的模块度增益，并选择最优社区。
         """
-
-        def adjusted_modularity_gain(
-            G,
-            node,
-            pre_target_community_nodes,
-            pre_current_community_nodes,
-            lambda_penalty=1.0,
-        ):
-            """
-            根据社区直径变化和预期直径惩罚修正模块度增益。
-
-            参数：
-                G: NetworkX 图
-                node: 当前尝试移动的节点
-                pre_target_community_nodes: 当前目标社区的节点列表（不含 node）
-                lambda_penalty: 惩罚项权重参数（默认 1.0）
-
-            返回：
-                修正后的模块度增益
-            """
-            # 目标社区原始直径与预期直径
-            expected_diameter_before = self.expected_lfr_diameter(
-                len(pre_target_community_nodes)
-            )
-            pre_subgraph = G.subgraph(pre_target_community_nodes)
-            if nx.is_connected(pre_subgraph):
-                # actual_diameter_before = nx.diameter(pre_subgraph)
-                ...
-            else:
-                return 0
-
-            # 模拟将 node 加入社区后的直径与预期值
-            # TODO 目标社区节点不仅仅是加一
-            expected_diameter_after = self.expected_lfr_diameter(
-                len(pre_target_community_nodes) + len(pre_current_community_nodes)
-            )
-            after_nodes = pre_target_community_nodes.copy()
-            after_nodes.extend(pre_current_community_nodes)
-            after_subgraph = G.subgraph(after_nodes)
-            if nx.is_connected(after_subgraph):
-                # actual_diameter_after = nx.diameter(after_subgraph)
-                ...
-            else:
-                return 0
-
-            # TODO 除以节点变化数量
-            delta_diameter = math.sqrt(
-                (expected_diameter_after - expected_diameter_before)
-                / len(pre_current_community_nodes)
-            )
-            # print(f"delta_diameter:{delta_diameter}")
-            diameter_penalty = lambda_penalty * delta_diameter
-
-            return diameter_penalty
-
+        modularity_results = {}
         neighbors = list(G.neighbors(node))
         if not neighbors:
             return G.nodes[node]["community_id"]
-
-        best_community = G.nodes[node]["community_id"]
-        max_modularity_gain = 0
+        # current_community_id = G.nodes[node]["community_id"]
+        best_community_id = G.nodes[node]["community_id"]
 
         for neighbor in neighbors:
-            neighbor_community = G.nodes[neighbor]["community_id"]
-            if neighbor_community != best_community:
-                gain = self.calculate_modularity_gain(G, node, neighbor_community)
+            neighbor_community_id = G.nodes[neighbor]["community_id"]
 
-                if gain > 0:
-                    pre_target_community_nodes = self.trace_original_nodes(
-                        neighbor_community
-                    )
-                    pre_current_community_nodes = self.trace_original_nodes(
-                        G.nodes[node]["community_id"]
-                    )
+            # current_community = self.trace_original_nodes(current_community_id)
+            # target_community = self.trace_original_nodes(neighbor_community_id)
+            # num = len(current_community) + len(target_community)
 
-                    if (
-                        len(pre_current_community_nodes) > 3
-                        or len(pre_target_community_nodes) > 3
-                    ):
-                        # print(len(pre_target_community_nodes))
-                        diameter_penalty = adjusted_modularity_gain(
-                            self.original_graph,
-                            node,
-                            pre_target_community_nodes,
-                            pre_current_community_nodes,
-                            lambda_penalty=1.0,
-                        )
-                        gain = gain * diameter_penalty
-
+            if neighbor_community_id != best_community_id:
+                gain = self.calculate_modularity_gain(G, node, neighbor_community_id)
+                # gain *= (1 / num**2)
                 # 选择一个符合直径期望的最优社区
-                if gain > max_modularity_gain:
-                    max_modularity_gain = gain
-                    best_community = neighbor_community
+                if gain > 0:
+                    if neighbor_community_id in modularity_results.keys():
+                        modularity_results[neighbor_community_id] = max(
+                            modularity_results[neighbor_community_id], gain
+                        )
+                    else:
+                        modularity_results[neighbor_community_id] = gain
 
-        return best_community
+        return modularity_results
 
     def calculate_modularity_gain(self, G, node, target_community):
         """
@@ -364,6 +369,14 @@ if __name__ == "__main__":
     min_community_size = 10
     mixing_parameter = 0.1  # 混合参数
 
+    # number_of_point = 50  # 节点数
+    # degree_exponent = 3  # 幂律指数
+    # community_size_exponent = 3  # 社区大小幂律指数
+    # average_degree = 4
+    # min_degree = 2
+    # min_community_size = 3
+    # mixing_parameter = 0.1  # 混合参数
+
     # 生成图
     G, true_communities = create_graph(
         number_of_point,
@@ -393,9 +406,19 @@ if __name__ == "__main__":
         truth_table=truth_table,
     )
     communities = results[0].communities
+
+    for idx, community in enumerate(communities):
+        subgraph = G.subgraph(community)
+        if nx.is_connected(subgraph):
+            print(
+                f"Community {idx}, size {len(community)}, diameter = {nx.diameter(subgraph)}"
+            )
+        else:
+            print(f"Community {idx} is disconnected!")
+
     pos = nx.spring_layout(G, seed=42)
     # draw_communities(G, pos)
-    # draw_communities(G, pos, communities)
+    draw_communities(G, pos, communities)
 
     # 计算评估指标
     # 转化 truth_table 的格式
@@ -411,4 +434,16 @@ if __name__ == "__main__":
     CommunityComparator(communities, true_communities).run()
 
     d = {"G": G, "communities": communities}
-    save_pkl_to_temp(d, "typical_graph")
+    # save_pkl_to_temp(d, "typical_graph")
+
+    # edge_list = test_raw_data
+    # truth_table = test_truth_table
+    # G = nx.Graph()
+    # G.add_edges_from(edge_list)
+    # pos = nx.spring_layout(G, seed=42)
+    # draw_communities(G, pos)
+    # algorithmDealer = AlgorithmDealer()
+    # louvain_algorithm = LeidenP()
+    # results = algorithmDealer.run([louvain_algorithm], G, num_clusters=2)
+    # communities = results[0].communities
+    # draw_communities(G, pos, communities)
