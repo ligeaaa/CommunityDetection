@@ -1,7 +1,12 @@
+import glob
+import pickle
+
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from algorithm.common.util.read_pkl import read_data
+
+import os
 
 
 def calculate_precision_recall(data_list):
@@ -638,35 +643,107 @@ def compare_all_conditions(
     plt.show()
 
 
+# ================ 新增：从文件中读取并附加 file_name 字段 ================ #
+def load_data_with_filename(result_dir, algorithm_name):
+    all_data = []
+    file_pattern = os.path.join(result_dir, f"{algorithm_name}-*.pkl")
+    for file_path in glob.glob(file_pattern):
+        try:
+            with open(file_path, "rb") as f:
+                data_list = pickle.load(f)
+
+                # 兼容 data 是单个 dict 的情况
+                if isinstance(data_list, dict):
+                    data_list = [data_list]
+
+                for d in data_list:
+                    if isinstance(d, dict):
+                        d["file_name"] = os.path.basename(file_path)
+                        all_data.append(d)
+                    else:
+                        print(f"⚠️ 非法数据类型：{type(d)} in {file_path}")
+        except Exception as e:
+            print(f"❌ 读取失败：{file_path}，错误信息：{e}")
+    return all_data
+
+
+# ================ 原有 extract & export 函数 ================ #
+
+
+def extract_graph_category(file_name):
+    """
+    从文件名中提取图的类型信息，忽略前缀编号
+    例如：Leiden_Rarev0.03-103_point-level2,density-level1,community_size-level2.pkl
+    提取：point-level2,density-level1,community_size-level2
+    """
+    parts = file_name.split("-", 1)
+    if len(parts) < 2:
+        return "unknown"
+    category = parts[1]
+    category = category.split(".pkl")[0]
+    # 去掉前缀编号部分（如 103_）
+    if "_" in category:
+        category = category.split("_", 1)[1]
+    return category
+
+
+def export_grouped_metrics_to_excel(
+    data_dict, output_path="result/grouped_algorithm_metrics.xlsx"
+):
+    records = []
+    for algorithm_name, data_list in data_dict.items():
+        for data in data_list:
+            file_name = data.get("file_name", "unknown.pkl")
+            category = extract_graph_category(file_name)
+            metrics = data.get("metrics", {})
+            records.append(
+                {
+                    "Graph Category": category,
+                    "Algorithm": algorithm_name,
+                    "Precision": metrics.get("Precision", 0),
+                    "Accuracy": metrics.get("Recall", 0),
+                    "Runtime": metrics.get("runtime", 0),
+                    "Modularity": metrics.get("Modularity", 0),
+                }
+            )
+
+    df = pd.DataFrame(records)
+    grouped_df = (
+        df.groupby(["Graph Category", "Algorithm"])
+        .mean(numeric_only=True)
+        .reset_index()
+    )
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    grouped_df.to_excel(output_path, index=False)
+    print(f"✅ Exported grouped average results to Excel: {output_path}")
+
+
+# ============================ 主执行逻辑 ============================ #
 if __name__ == "__main__":
-    # 结果文件目录
     result_dir = r"D:\code\FYP\CommunityDetection\result_collection\result\test"
-    # 是否比较所有组合（27种）
     compare_all_combinations = False
-    # 对比的两种算法
     algorithm_name_1 = "Leiden"
-    # algorithm_name_1 = "SpectralCluster"
-    # algorithm_name_1 = "Leiden_Rarev0.03"
     algorithm_name_2 = "Louvain"
-    data_list_1 = read_data(
-        result_dir,
-        algorithm=algorithm_name_1,
-    )
-    data_list_2 = read_data(
-        result_dir,
-        algorithm=algorithm_name_2,
-    )
+
+    # 改为手动读取并附带文件名
+    data_list_1 = load_data_with_filename(result_dir, algorithm_name_1)
+    data_list_2 = load_data_with_filename(result_dir, algorithm_name_2)
 
     if compare_all_combinations:
-        # 批量对比 3*3*3 = 27 种情况
         compare_all_conditions(
             result_dir, algorithm_name_1, algorithm_name_2, max_rank_number=10
         )
     else:
-
         show_comparison_precision_recall(
             data_list_1, data_list_2, label_1=algorithm_name_1, label_2=algorithm_name_2
         )
         show_comparison_avg_metrics(
             data_list_1, data_list_2, label_1=algorithm_name_1, label_2=algorithm_name_2
         )
+
+    # ✅ 导出带分类平均值的 Excel 表格
+    data_dict = {
+        algorithm_name_1: data_list_1,
+        algorithm_name_2: data_list_2,
+    }
+    export_grouped_metrics_to_excel(data_dict)

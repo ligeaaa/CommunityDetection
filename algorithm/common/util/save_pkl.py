@@ -3,7 +3,7 @@
 import os
 import pickle
 
-pkl_data_dir = r"D:\code\FYP\CommunityDetection\data\temp"
+pkl_data_dir = r"/data/temp"
 
 
 def save_pkl_to_temp(data, filename):

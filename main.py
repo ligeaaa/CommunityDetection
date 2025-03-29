@@ -6,6 +6,8 @@ import torch
 
 from algorithm.algorithm_dealer import AlgorithmDealer
 from algorithm.classic.GN import GN
+from algorithm.classic.Leiden_P import LeidenP
+from algorithm.classic.leiden import Leiden
 from algorithm.classic.louvain import Louvain
 from algorithm.classic.SBM import SBM
 from algorithm.classic.spectral_clustering import SpectralCluster
@@ -23,9 +25,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
 
 # 读取数据集和truthtable（如有）
-a = Dataset(ZKClubDataset())
+# a = Dataset(ZKClubDataset())
 # a = Dataset(PolbooksDataset())
-# a = Dataset(AmericanCollegeFootball())
+a = Dataset(AmericanCollegeFootball())
 # a = Dataset(EmailEuCoreDataset())
 # a = Dataset(CoraDataset())
 # a = Dataset(AmazonDataset())
@@ -41,6 +43,8 @@ louvain_algorithm = Louvain()
 sbm_algorithm = SBM()
 spectral_clustering_algorithm = SpectralCluster()
 GN_algorithm = GN()
+leiden = Leiden()
+leidenP = LeidenP()
 # accuracy, nmi, mod, runtime = GCN_train_and_evaluate(raw_data, truth_table, device)
 # communities = GCN_train_unsupervised(raw_data, device, epochs=1000, learning_rate=0.01, margin=1.0)
 
@@ -48,6 +52,11 @@ GN_algorithm = GN()
 # results = algorithmDealer.run([sbm_algorithm], G, num_clusters=num_clusters)
 results = algorithmDealer.run([GN_algorithm], G)
 # results = algorithmDealer.run([spectral_clustering_algorithm], G, num_clusters=num_clusters)
+results = algorithmDealer.run(
+    [leiden],
+    G,
+    num_clusters=num_clusters,
+)
 communities = results[0].communities
 
 

@@ -6,7 +6,7 @@ from collections import defaultdict
 from algorithm.algorithm_dealer import AlgorithmDealer, Algorithm
 from algorithm.common.benchmark.benchmark_graph import create_graph
 from algorithm.common.util.CommunityCompare import CommunityComparator
-from algorithm.common.util.data_reader.save_pkl import save_pkl_to_temp
+from algorithm.common.util.save_pkl import save_pkl_to_temp
 from algorithm.common.util.drawer import draw_communities
 from algorithm.common.util.result_evaluation import CommunityDetectionMetrics
 
@@ -199,7 +199,13 @@ if __name__ == "__main__":
     min_degree = 2
     min_community_size = 10
     mixing_parameter = 0.1  # 混合参数
-
+    # number_of_point = 50  # 节点数
+    # degree_exponent = 3  # 幂律指数
+    # community_size_exponent = 3  # 社区大小幂律指数
+    # average_degree = 4
+    # min_degree = 2
+    # min_community_size = 3
+    # mixing_parameter = 0.1  # 混合参数
     # 生成图
     G, true_communities = create_graph(
         number_of_point,

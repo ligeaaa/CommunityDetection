@@ -23,12 +23,12 @@ def draw_communities(
     draw_networkx_labels=True,
     title=None,
     metrics=None,
+    use_shapes=False,  # 新增参数
 ):
-    # 按照社区大小从大到小排序
-    communities = sorted(communities, key=len, reverse=True)
+    if communities:
+        communities = sorted(communities, key=len, reverse=True)
     total_nodes = G.number_of_nodes()
 
-    # 如果节点数超过 max_nodes，则随机选择一部分节点
     if total_nodes > max_nodes:
         nodes = set()
         if communities:
@@ -48,8 +48,7 @@ def draw_communities(
         subgraph = G
 
     fig, ax = plt.subplots()
-
-    legend_handles = []  # **存储图例**
+    legend_handles = []
 
     if communities:
         subgraph_communities = [
@@ -57,7 +56,6 @@ def draw_communities(
             for community in communities
         ]
 
-        # **使用更多颜色，增强区分度**
         color_cycle = itertools.cycle(
             [
                 "r",
@@ -82,52 +80,55 @@ def draw_communities(
                 "#17becf",
             ]
         )
+        marker_cycle = itertools.cycle(
+            ["o", "s", "^", "v", "<", ">", "d", "p", "h", "X", "*", "8"]
+        )  # 新增形状循环器
 
-        # **绘制不同社区的节点**
-        for i, (community, color) in enumerate(zip(subgraph_communities, color_cycle)):
+        for i, community in enumerate(subgraph_communities):
+            color = next(color_cycle)
+            marker = next(marker_cycle) if use_shapes else "o"
+
             scatter = nx.draw_networkx_nodes(
                 subgraph,
                 pos,
                 nodelist=community,
-                node_color=color,
+                node_color="none" if use_shapes else color,
+                edgecolors="black" if use_shapes else "none",
+                linewidths=1.2 if use_shapes else 0,
                 node_size=300,
-                alpha=0.7,
+                alpha=1.0,  # 不使用透明度控制，完全由填充色控制
                 ax=ax,
+                node_shape=marker,
             )
-            legend_handles.append((scatter, f"{i + 1}"))  # **存储 (句柄, 标签)**
+            legend_handles.append((scatter, f"{i + 1}"))
 
     else:
-        # **如果没有社区划分，则绘制原始图**
         scatter = nx.draw_networkx_nodes(
             subgraph, pos, node_size=300, alpha=0.7, node_color="lightblue", ax=ax
         )
         legend_handles.append((scatter, "未划分社区"))
 
-    # **绘制所有边**
     nx.draw_networkx_edges(subgraph, pos, edgelist=subgraph.edges(), alpha=0.2, ax=ax)
 
-    # **绘制节点标签**
     if draw_networkx_labels:
         nx.draw_networkx_labels(subgraph, pos, font_size=8, font_color="black", ax=ax)
 
-    # **设置标题**
     if title:
         ax.set_title(f"{title}")
 
-    # **添加图例**
-    handles, labels = zip(*legend_handles)  # **解压 legend 数据**
-    ax.legend(
-        handles,
-        labels,
-        loc="best",
-        fontsize=10,
-        frameon=True,
-        facecolor="white",
-        edgecolor="black",
-        framealpha=0.7,
-    )
+    if legend_handles:
+        handles, labels = zip(*legend_handles)
+        ax.legend(
+            handles,
+            labels,
+            loc="best",
+            fontsize=10,
+            frameon=True,
+            facecolor="white",
+            edgecolor="black",
+            framealpha=0.7,
+        )
 
-    # **在图的右侧显示 metrics 信息**
     if metrics:
         metrics_text = "\n".join(
             [
@@ -139,7 +140,6 @@ def draw_communities(
                 for key, value in metrics.items()
             ]
         )
-
         plt.gcf().text(
             0.6,
             0.25,
@@ -150,8 +150,7 @@ def draw_communities(
         )
 
     plt.show()
-
-    return fig  # **返回 Matplotlib Figure 对象**
+    return fig
 
 
 def draw_shortest_paths(G, pos):

@@ -167,7 +167,7 @@ class Leiden_Rare(Algorithm):
             )
 
             # 如果所有社区直径都 小于 预期直径，结束
-            if largest_diameter <= expected_diameter + 1:
+            if largest_diameter <= expected_diameter:
                 break
 
             # 如果不满足条件，则不split，并把该社区从待处理社区中移除

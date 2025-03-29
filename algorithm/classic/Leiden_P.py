@@ -4,7 +4,6 @@ from networkx import Graph
 from collections import defaultdict
 
 from algorithm.algorithm_dealer import AlgorithmDealer, Algorithm
-from algorithm.common.benchmark.benchmark_graph import create_graph
 from algorithm.common.util.CommunityCompare import CommunityComparator
 
 # from algorithm.common.util.save_pkl import save_pkl_to_temp
@@ -18,7 +17,7 @@ class LeidenP(Algorithm):
         self.algorithm_name = "Leiden_P"
         self.graph_snapshots = []  # 存储每个阶段的G
         self.original_graph = None  # 初始图
-        self.version = "v0.02"
+        self.version = "v0.03"
 
     def process(
         self,
@@ -39,8 +38,7 @@ class LeidenP(Algorithm):
         random.seed(seed)
         self.original_graph = G.copy()
         # 初始化每个节点的社区编号
-        for node in G.nodes():
-            G.nodes[node]["community_id"] = node
+        self.init_G(G)
 
         iteration = 0
         prev_communities = None
@@ -205,81 +203,43 @@ class LeidenP(Algorithm):
     def move_nodes_fast(self, G):
         """
         通过模块度增益优化移动节点，以优化社区划分。
-        全局构建模块度增益矩阵，贪心选取最大模块度增益对，受限于直径约束。
+        以节点为单位进行迁移，贪心接受增益 > 0 的移动，同时满足直径约束。
         """
         expected_diameter = (
             self.expected_lfr_diameter(self.original_graph.number_of_nodes() * 2) + 1
         )
-        communities = list(set(nx.get_node_attributes(G, "community_id").values()))
-        N = len(communities)
-
-        comm_index_map = {comm: idx for idx, comm in enumerate(communities)}
-        index_comm_map = {idx: comm for comm, idx in comm_index_map.items()}
-
-        modularity_matrix = [[-float("inf")] * N for _ in range(N)]
-
-        # 构建模块度增益矩阵（行表示节点所属社区，列表示目标社区）
-        for node in G.nodes():
-            node_comm = G.nodes[node]["community_id"]
-            modularity_results = self.get_modularity_results(G, node)
-            if not isinstance(modularity_results, dict):
-                continue
-            for target_comm, gain in modularity_results.items():
-                i = comm_index_map[node_comm]
-                j = comm_index_map[target_comm]
-                modularity_matrix[i][j] = max(modularity_matrix[i][j], gain)
-
-        visited_communities = set()
-        visited_pairs = set()
         changed = False
 
-        while True:
-            max_gain = -float("inf")
-            best_pair = None
-            for i in range(N):
-                for j in range(N):
-                    if (
-                        i == j
-                        or i in visited_communities
-                        or j in visited_communities
-                        or (i, j) in visited_pairs
-                    ):
-                        continue
-                    if modularity_matrix[i][j] > max_gain:
-                        max_gain = modularity_matrix[i][j]
-                        best_pair = (i, j)
+        nodes = list(G.nodes())
 
-            if best_pair is None:
-                break
+        for node in nodes:
+            current_comm = G.nodes[node]["community_id"]
+            modularity_results = self.get_modularity_results(G, node)
 
-            i, j = best_pair
-            comm_i = index_comm_map[i]
-            comm_j = index_comm_map[j]
-
-            nodes_i = self.trace_original_nodes(comm_i, G=G.copy())
-            nodes_j = self.trace_original_nodes(comm_j, G=G.copy())
-            merged_nodes = list(set(nodes_i + nodes_j))
-            subgraph = self.original_graph.subgraph(merged_nodes)
-
-            if (not nx.is_connected(subgraph)) or (
-                nx.diameter(subgraph) > expected_diameter
-            ):
-                visited_pairs.add((i, j))
-                visited_pairs.add((j, i))
+            if not isinstance(modularity_results, dict) or not modularity_results:
                 continue
 
-            # print(f"Trying merge community {comm_i} into {comm_j}, diameter: {nx.diameter(subgraph)}")
+            # 找出最优目标社区（gain 最大）
+            best_target = max(modularity_results.items(), key=lambda x: x[1])[0]
+            gain = modularity_results[best_target]
 
-            # 修改 comm_i 社区内所有节点的 community_id 为 comm_j
-            for node in G.nodes():
-                if G.nodes[node]["community_id"] == comm_i:
-                    G.nodes[node]["community_id"] = comm_j
+            if gain <= 0 or best_target == current_comm:
+                continue
 
+            # 获取移动前后涉及的节点集合，用于直径约束判断
+            nodes_current = self.trace_original_nodes(current_comm, G=G.copy())
+            nodes_target = self.trace_original_nodes(best_target, G=G.copy())
+            merged_nodes = list(set(nodes_current + nodes_target))
+            subgraph = self.original_graph.subgraph(merged_nodes)
+
+            if not nx.is_connected(subgraph):
+                continue
+            if nx.diameter(subgraph) > expected_diameter:
+                continue
+
+            # 执行迁移：将该节点从当前社区迁入目标社区
+            G.nodes[node]["community_id"] = best_target
             changed = True
-
-            # 标记两个社区为已访问
-            visited_communities.add(i)
-            visited_communities.add(j)
 
         return changed
 
@@ -344,6 +304,34 @@ class LeidenP(Algorithm):
         b = 1.58
         return a * np.log(n) + b
 
+    def init_G(self, G):
+        """
+        初始化图 G 中每个节点的社区编号：
+        - 找出所有3-团（完全连接的3个节点）
+        - 每个3-团构成一个初始社区
+        - 未参与3-团的节点各自形成单节点社区
+        """
+        from networkx.algorithms.clique import find_cliques
+
+        assigned_nodes = set()
+        community_id = 0
+
+        # 找出所有3个节点的完全子图（3-clique）
+        for clique in find_cliques(G):
+            if len(clique) == 3:
+                # 若3个点都未被分配，则组成一个社区
+                if all(node not in assigned_nodes for node in clique):
+                    for node in clique:
+                        G.nodes[node]["community_id"] = community_id
+                        assigned_nodes.add(node)
+                    community_id += 1
+
+        # 对于剩余未被分配的节点，每个单独构成一个社区
+        for node in G.nodes():
+            if node not in assigned_nodes:
+                G.nodes[node]["community_id"] = community_id
+                community_id += 1
+
 
 if __name__ == "__main__":
     # edge_list = test_raw_data
@@ -378,16 +366,30 @@ if __name__ == "__main__":
     # mixing_parameter = 0.1  # 混合参数
 
     # 生成图
-    G, true_communities = create_graph(
-        number_of_point,
-        min_community_size,
-        degree_exponent,
-        community_size_exponent,
-        average_degree,
-        min_degree,
-        mixing_parameter,
-        seed=53,
+    # G, true_communities = create_graph(
+    #     number_of_point,
+    #     min_community_size,
+    #     degree_exponent,
+    #     community_size_exponent,
+    #     average_degree,
+    #     min_degree,
+    #     mixing_parameter,
+    #     seed=53,
+    # )
+
+    from algorithm.common.benchmark.graph_generate_configs import generate_graphs
+
+    a = generate_graphs(
+        "level2",
+        "level2",
+        "level2",
+        1,
+        "title",
+        random_seed=100,
     )
+    G = a[0][0]
+    true_communities = a[0][1]
+
     truth_table = [
         [node, community_id]
         for community_id, nodes in enumerate(true_communities)

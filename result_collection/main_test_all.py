@@ -70,7 +70,7 @@ if __name__ == "__main__":
         params = data["params"]
         title = data["title"]
 
-        # if flag and title != "178_point-level2, density-level3, community_size-level3":
+        # if flag and title != "142_point-level2, density-level2, community_size-level3":
         #     continue
         # else:
         #     flag = False
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         leidenP = LeidenP()
 
         results = algorithmDealer.run(
-            [leidenP],
+            [leiden_rare_algorithm],
             G,
             num_clusters=len(true_communities),
         )
@@ -131,8 +131,12 @@ if __name__ == "__main__":
             print(f"Results saved to {result_filepath}")
 
             # 可视化结果
-            # from algorithm.common.util.drawer import draw_communities
+            from algorithm.common.util.drawer import draw_communities
 
-            # draw_communities(
-            #     G, pos, communities, title=algorithm_name+version + "-" + title, metrics=metrics
-            # )
+            draw_communities(
+                G,
+                pos,
+                communities,
+                title=algorithm_name + version + "-" + title,
+                metrics=metrics,
+            )
